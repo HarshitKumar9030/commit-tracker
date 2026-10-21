@@ -73,6 +73,38 @@ try {
   const isolated = await call("state", undefined, joined.cookie);
   assert.equal(isolated.data.settings.teamId, teamId);
   assert.equal(isolated.data.commits.length, 0);
+  const fixtureClient = new MongoClient(process.env.MONGODB_URI);
+  await fixtureClient.connect();
+  try {
+    const database = fixtureClient.db(process.env.MONGODB_DB || "relay");
+    const stored = await database
+      .collection("settings")
+      .findOne({ _id: teamId });
+    assert.ok(
+      stored.codeHash && !stored.codeHash.includes("qa-test-code-only"),
+    );
+    await database
+      .collection("commits")
+      .insertOne({
+        _id: `${teamId}:${settings.repo}:main:${"a".repeat(40)}`,
+        teamId,
+        repo: settings.repo,
+        sha: "a".repeat(40),
+        branch: "main",
+        title: "Review assignment fixture",
+        author: "external-author",
+        date: new Date().toISOString(),
+        body: "",
+        url: "https://github.com",
+        files: [],
+        additions: 0,
+        deletions: 0,
+        assignee: member.id,
+      });
+  } finally {
+    await fixtureClient.close();
+  }
+
   assert.equal(
     (
       await call(
@@ -87,6 +119,8 @@ try {
     (await call("focus", { focus: "Not allowed" }, joined.cookie)).status,
     401,
   );
+  const reassigned = await call("state", undefined, ownerCookie);
+  assert.equal(reassigned.data.commits[0].assignee, state.data.userId);
   const missingOwner = await call(
     "settings",
     { ...settings, members: [member] },
@@ -103,6 +137,7 @@ try {
       ownerOnlySettings: true,
       removedMemberDenied: true,
       creatorRemovalBlocked: true,
+      pendingReviewsReassigned: true,
     }),
   );
 } finally {

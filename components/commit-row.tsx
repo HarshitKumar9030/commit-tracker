@@ -30,6 +30,7 @@ export default function CommitRow({
       whileHover={{ x: 3 }}
       whileTap={{ scale: 0.995 }}
       transition={{ duration: 0.22 }}
+      data-tooltip="Open changed files and code diff. The avatar identifies the assigned reviewer."
       className="commit-row"
       key={c.sha}
       onClick={() => onSelect(c)}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import MotionProvider from "@/components/motion-provider";
 export const metadata: Metadata = {
-  title: "Relay — Commit tracker",
+  title: "Relay Commit Tracker",
   description:
     "Track repository commits, review code changes, and manage your hackathon team.",
 };

@@ -1,4 +1,5 @@
 "use client";
+import { assignReviewer } from "@/lib/assignment";
 import { motion } from "framer-motion";
 import Onboarding from "./onboarding";
 import LiveSignal from "./live-signal";
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import type { Commit, Review, Settings } from "@/lib/types";
 import { Avatar, Empty, Modal } from "./primitives";
+import DemoTour from "./demo-tour";
 import TeamView from "./team-view";
 import CommitRow from "./commit-row";
 import ReviewDialog from "./review-dialog";
@@ -81,6 +83,7 @@ export default function Workspace() {
       <Onboarding
         onSuccess={async () => {
           setTeamPortal(false);
+          window.history.replaceState(null, "", location.pathname);
           await refresh();
         }}
         onCancel={data ? () => setTeamPortal(false) : undefined}
@@ -138,7 +141,25 @@ export default function Workspace() {
       s.members.length
     )
       throw new Error("Each teammate needs a unique GitHub username.");
-    if (data!.mode === "demo") setData({ ...data!, settings: s });
+    if (data!.mode === "demo")
+      setData({
+        ...data!,
+        settings: s,
+        commits: data!.commits.map((c) => {
+          if (!c.review && !s.members.some((m) => m.id === c.assignee)) {
+            const eligible = s.members.filter(
+              (m) => m.login.toLowerCase() !== c.author.toLowerCase(),
+            );
+            return {
+              ...c,
+              assignee: eligible.length
+                ? assignReviewer(c.sha, c.author, s.members)
+                : "",
+            };
+          }
+          return c;
+        }),
+      });
     else {
       await api("settings", s);
       await refresh();
@@ -236,7 +257,11 @@ export default function Workspace() {
             <span>{data.settings.repo.split("/")[1]}</span>
             <GitBranch size={12} />
           </div>
-          <button className="nav-item" onClick={() => setSettingsOpen(true)}>
+          <button
+            className="nav-item"
+            data-tooltip="Change the repository, add or remove members, and copy your team invite."
+            onClick={() => setSettingsOpen(true)}
+          >
             <SettingsIcon size={18} />
             Team settings
           </button>
@@ -289,6 +314,7 @@ export default function Workspace() {
             </div>
             <button
               className="you-button"
+              data-tooltip="View your profile, switch demo identities, or create another team."
               title="Your profile"
               onClick={() => setIdentity(true)}
             >
@@ -299,11 +325,11 @@ export default function Workspace() {
         </header>
         <motion.div
           className="page-content"
-          key={page}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
+          {data.mode === "demo" && <DemoTour navigate={navigate} />}
           <div className="page-heading">
             <div>
               <h1>
@@ -438,6 +464,7 @@ export default function Workspace() {
                     </span>
                   </h2>
                   <button
+                    data-tooltip="Import the latest 20 commits from the monitored branch. Existing commits are skipped."
                     className="primary sync-button"
                     disabled={syncing}
                     onClick={sync}
@@ -454,6 +481,13 @@ export default function Workspace() {
                     {["All commits", "Needs review", "Reviewed"].map((f) => (
                       <button
                         key={f}
+                        data-tooltip={
+                          f === "All commits"
+                            ? "Show all imported commits."
+                            : f === "Needs review"
+                              ? "Show commits without a submitted review."
+                              : "Show approved commits."
+                        }
                         aria-pressed={filter === f}
                         className={filter === f ? "selected" : ""}
                         onClick={() => setFilter(f)}
@@ -465,6 +499,7 @@ export default function Workspace() {
                   <div className="search">
                     <Search size={15} />
                     <input
+                      data-tooltip="Search by commit title, author, or SHA."
                       aria-label="Search commits"
                       placeholder="Find a commit…"
                       value={search}
@@ -556,6 +591,7 @@ export default function Workspace() {
                     ))}
                   </div>
                   <button
+                    data-tooltip="Update the task shown beside your name to the rest of the team."
                     className="team-footer"
                     onClick={() => setFocus(user.focus)}
                   >
@@ -569,7 +605,10 @@ export default function Workspace() {
                     Export commit descriptions and review notes for your
                     presentation.
                   </p>
-                  <button onClick={() => navigate("Presentation")}>
+                  <button
+                    data-tooltip="Create a Markdown recap from commit history and review notes."
+                    onClick={() => navigate("Presentation")}
+                  >
                     Open recap
                     <ArrowUpRight size={16} />
                   </button>

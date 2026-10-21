@@ -118,6 +118,7 @@ export default function SettingsDialog({
               Members <span>{value.members.length}/20</span>
             </h3>
             <motion.button
+              data-tooltip="Add a team profile. Save settings, then share the invite link and access code."
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className="secondary"

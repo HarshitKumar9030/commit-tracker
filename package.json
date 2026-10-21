@@ -11,7 +11,8 @@
     "db:start": "node scripts/mongodb.mjs",
     "watch:repo": "node --env-file=.env.local scripts/watch-repo.mjs",
     "test:live": "node --env-file=.env.local scripts/check-live.mjs",
-    "format": "prettier --write app components lib scripts tests *.ts *.json *.md"
+    "format": "prettier --write app components lib scripts tests *.ts *.json *.md",
+    "test:teams": "node --env-file=.env.local scripts/check-teams.mjs"
   },
   "dependencies": {
     "ably": "2.29.0",

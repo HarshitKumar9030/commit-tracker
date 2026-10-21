@@ -149,6 +149,7 @@ export default function ReviewDialog({
           )}
           <div className="dialog-actions">
             <button
+              data-tooltip="Record requested changes with feedback for the team."
               className="secondary"
               disabled={busy}
               onClick={() => submit("changes")}
@@ -157,6 +158,7 @@ export default function ReviewDialog({
               Request changes
             </button>
             <button
+              data-tooltip="Save an approval and your note to the team workspace. This does not merge code on GitHub."
               className="primary"
               disabled={busy}
               onClick={() => submit("approved")}

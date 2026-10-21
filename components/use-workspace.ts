@@ -13,6 +13,36 @@ export async function api(path: string, body?: unknown) {
   if (!r.ok) throw new Error(value.error || "Request failed");
   return value;
 }
+function normalizeDemo(value: Workspace): Workspace {
+  const tasks: Record<string, string> = {
+    "Building the core": "Core features",
+    "Crafting the experience": "Frontend UI",
+    "Connecting the dots": "Backend API",
+    "Making the pitch": "Presentation",
+  };
+  value.settings = {
+    ...value.settings,
+    name: value.settings.name || "Demo team",
+    teamId: value.settings.teamId || "demo",
+    members: value.settings.members.map(
+      (m: Workspace["settings"]["members"][number]) => ({
+        ...m,
+        focus: tasks[m.focus] || m.focus,
+      }),
+    ),
+  };
+  value.commits = value.commits.map((c: Workspace["commits"][number]) => ({
+    ...c,
+    body:
+      c.body === "A small step forward for the hackathon workspace."
+        ? "Updated the project implementation and related files."
+        : c.body,
+    ...(c.review?.note === "Looks good. Added this to our project recap."
+      ? { review: { ...c.review, note: "Approved. No changes requested." } }
+      : {}),
+  }));
+  return value;
+}
 function readDemo(): Workspace {
   try {
     const saved = localStorage.getItem("relay-demo-v1");
@@ -24,7 +54,7 @@ function readDemo(): Workspace {
         value.settings.members.length <= 20 &&
         Array.isArray(value.commits)
       )
-        return value;
+        return normalizeDemo(value);
     }
   } catch {}
   return demoWorkspace();
@@ -49,8 +79,13 @@ export function useWorkspace() {
       if (state.mode === "demo") {
         setData(readDemo());
         setLocked(null);
-      } else if (state.locked) {
-        setLocked(state.members);
+      } else if (
+        state.locked ||
+        (new URLSearchParams(location.search).get("team") &&
+          new URLSearchParams(location.search).get("team") !==
+            state.settings?.teamId)
+      ) {
+        setLocked(state.members || []);
         setData(null);
       } else {
         setData(state);

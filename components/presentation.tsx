@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ArrowUpRight, Copy, Check, Download, Sparkles } from "lucide-react";
+import { ArrowUpRight, Copy, Check, Download, FileText } from "lucide-react";
 import type { Workspace } from "@/lib/types";
 export default function Presentation({ data }: { data: Workspace }) {
   const [copied, setCopied] = useState(false);
@@ -10,12 +10,13 @@ export default function Presentation({ data }: { data: Workspace }) {
     <section className="presentation">
       <div className="presentation-top">
         <div>
-          <Sparkles size={24} />
+          <FileText size={24} />
           <h2>Project summary</h2>
           <p>Copy or export the latest commits and approved review notes.</p>
         </div>
         <div className="action-row">
           <button
+            data-tooltip="Copy commit descriptions, approved review notes, and team tasks to your clipboard."
             className="secondary"
             onClick={async () => {
               await navigator.clipboard.writeText(text);
@@ -26,6 +27,7 @@ export default function Presentation({ data }: { data: Workspace }) {
             {copied ? "Copied" : "Copy recap"}
           </button>
           <button
+            data-tooltip="Download a Markdown file for your hackathon presentation."
             className="primary"
             onClick={() => {
               const url = URL.createObjectURL(

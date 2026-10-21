@@ -3,7 +3,6 @@ import { configured, db, settings, user, failure } from "@/lib/server";
 export async function GET() {
   try {
     if (!configured()) return Response.json({ mode: "demo" });
-    const s = await settings();
     let u;
     try {
       u = await user();
@@ -12,8 +11,9 @@ export async function GET() {
       return Response.json({
         mode: "live",
         locked: true,
-        members: s.members.map(({ id, name, color }) => ({ id, name, color })),
+        members: [],
       });
+    const s = await settings(u.teamId);
     const commits = await (
       await db()
     )

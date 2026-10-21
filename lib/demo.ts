@@ -47,6 +47,9 @@ export function demoWorkspace(): Workspace {
     userId: "harshit",
     realtime: false,
     settings: {
+      name: "Demo team",
+      teamId: "demo",
+      ownerId: "harshit",
       repo: "HarshitKumar9030/commit-tracker",
       branch: "main",
       members,
@@ -71,7 +74,7 @@ export function demoWorkspace(): Workspace {
         ? {
             review: {
               verdict: "approved" as const,
-              note: "Looks good. Added this to our project recap.",
+              note: "Approved. No changes requested.",
               by: members[(i + 1) % 4].id,
               at: new Date().toISOString(),
             },
