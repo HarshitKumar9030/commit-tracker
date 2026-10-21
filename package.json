@@ -1,1 +1,35 @@
-{"name":"relay-commit-tracker","version":"1.0.0","private":true,"scripts":{"dev":"next dev --hostname 0.0.0.0","build":"next build","start":"next start","typecheck":"tsc --noEmit","test":"tsx --test tests/*.test.ts"},"dependencies":{"ably":"latest","lucide-react":"latest","mongodb":"latest","next":"latest","react":"latest","react-dom":"latest","server-only":"^0.0.1","zod":"latest"},"devDependencies":{"@playwright/test":"latest","@types/node":"latest","@types/react":"latest","@types/react-dom":"latest","tsx":"latest","typescript":"latest"}}
+{
+  "name": "relay-commit-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:start": "node scripts/mongodb.mjs",
+    "watch:repo": "node --env-file=.env.local scripts/watch-repo.mjs",
+    "test:live": "node --env-file=.env.local scripts/check-live.mjs",
+    "format": "prettier --write app components lib scripts tests *.ts *.json *.md"
+  },
+  "dependencies": {
+    "ably": "2.29.0",
+    "lucide-react": "1.60.0",
+    "mongodb": "7.7.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}
