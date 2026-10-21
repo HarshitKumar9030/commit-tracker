@@ -4,7 +4,6 @@ import { MongoClient } from "mongodb";
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Rest } from "ably";
-import { members } from "./demo";
 import type { Settings, Commit } from "./types";
 import { assignReviewer } from "./rules";
 
@@ -12,11 +11,7 @@ const globalDb = globalThis as unknown as {
   mongoPromise?: Promise<MongoClient>;
 };
 export const configured = () =>
-  Boolean(
-    process.env.MONGODB_URI &&
-    process.env.SESSION_SECRET &&
-    process.env.TEAM_ACCESS_CODE,
-  );
+  Boolean(process.env.MONGODB_URI && process.env.SESSION_SECRET);
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -40,19 +35,39 @@ export async function db() {
       });
   return (await globalDb.mongoPromise).db(process.env.MONGODB_DB || "relay");
 }
-export async function settings(): Promise<Settings> {
+export async function settings(explicitTeamId?: string): Promise<Settings> {
+  let teamId = explicitTeamId;
+  if (!teamId) {
+    try {
+      teamId = (await session()).teamId;
+    } catch {
+      teamId = "workspace";
+    }
+  }
   const data = await (
     await db()
   )
     .collection<Settings & { _id: string }>("settings")
-    .findOne({ _id: "workspace" });
-  return data
-    ? { repo: data.repo, branch: data.branch, members: data.members }
-    : {
-        repo: process.env.GITHUB_REPO || "HarshitKumar9030/commit-tracker",
-        branch: "main",
-        members,
-      };
+    .findOne({ _id: teamId });
+  if (!data) {
+    if (teamId !== "workspace")
+      throw new ApiError(404, "Team group not found.");
+    return {
+      teamId: "workspace",
+      name: "Hackathon workspace",
+      repo: process.env.GITHUB_REPO || "HarshitKumar9030/commit-tracker",
+      branch: "main",
+      members: [],
+    };
+  }
+  return {
+    teamId,
+    name: data.name || "Hackathon workspace",
+    ownerId: data.ownerId || data.members[0]?.id,
+    repo: data.repo,
+    branch: data.branch,
+    members: data.members,
+  };
 }
 export function sign(value: string) {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)
@@ -61,7 +76,7 @@ export function sign(value: string) {
     .update(value)
     .digest("hex");
 }
-export async function user() {
+export async function session() {
   const token = (await cookies()).get("relay-session")?.value;
   if (!token) throw new ApiError(401, "Join your workspace to continue.");
   const [body, signature] = token.split(".");
@@ -75,16 +90,43 @@ export async function user() {
   const payload = JSON.parse(Buffer.from(body, "base64url").toString());
   if (payload.exp < Date.now())
     throw new ApiError(401, "Session expired. Please join again.");
-  const s = await settings();
-  const member = s.members.find((m) => m.id === payload.id);
-  if (!member) throw new ApiError(401, "Unknown team member.");
-  return member;
+  return {
+    id: payload.id as string,
+    teamId: (payload.teamId || "workspace") as string,
+  };
 }
-export async function publish() {
+export async function user() {
+  const current = await session();
+  const s = await settings(current.teamId);
+  const member = s.members.find((m) => m.id === current.id);
+  if (!member)
+    throw new ApiError(401, "You are no longer a member of this team.");
+  return { ...member, teamId: current.teamId };
+}
+export async function issueSession(id: string, teamId: string) {
+  const body = Buffer.from(
+    JSON.stringify({ id, teamId, exp: Date.now() + 7 * 86400000 }),
+  ).toString("base64url");
+  (await cookies()).set("relay-session", `${body}.${sign(body)}`, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 86400,
+  });
+}
+export async function publish(teamId?: string) {
+  if (!teamId) {
+    try {
+      teamId = (await session()).teamId;
+    } catch {
+      teamId = "workspace";
+    }
+  }
   if (process.env.ABLY_API_KEY) {
     try {
       await new Rest(process.env.ABLY_API_KEY).channels
-        .get("relay:workspace")
+        .get(`relay:${teamId}`)
         .publish("refresh", { at: Date.now() });
     } catch (e) {
       console.error("Realtime notification failed", e);
@@ -130,8 +172,14 @@ export async function github(path: string) {
     );
   return response.json();
 }
-export async function ingest(repo: string, branch: string, shas: string[]) {
-  const s = await settings();
+export async function ingest(
+  repo: string,
+  branch: string,
+  shas: string[],
+  teamId?: string,
+) {
+  const s = await settings(teamId);
+  teamId = s.teamId || "workspace";
   const database = await db();
   const col = database.collection<Commit & { _id: string; repo: string }>(
     "commits",
@@ -140,7 +188,7 @@ export async function ingest(repo: string, branch: string, shas: string[]) {
   for (let i = 0; i < shas.length; i += 5) {
     await Promise.all(
       shas.slice(i, i + 5).map(async (sha) => {
-        const key = `${repo}:${branch}:${sha}`;
+        const key = `${teamId}:${repo}:${branch}:${sha}`;
         if (await col.findOne({ _id: key }, { projection: { _id: 1 } })) return;
         const data = await github(`${repo}/commits/${sha}`);
         const author = data.author?.login || data.commit.author.name;
@@ -169,17 +217,21 @@ export async function ingest(repo: string, branch: string, shas: string[]) {
               ...(f.patch ? { patch: f.patch } : {}),
             }),
           ),
-          assignee: assignReviewer(data.sha, author, s.members),
+          assignee: s.members.some(
+            (m) => m.login.toLowerCase() !== author.toLowerCase(),
+          )
+            ? assignReviewer(data.sha, author, s.members)
+            : "",
         };
         const r = await col.updateOne(
           { _id: key },
-          { $setOnInsert: { ...commit, repo } },
+          { $setOnInsert: { ...commit, repo, teamId } },
           { upsert: true },
         );
         added += r.upsertedCount;
       }),
     );
   }
-  await publish();
+  await publish(teamId);
   return added;
 }

@@ -33,7 +33,14 @@ export type Commit = {
   assignee: string;
   review?: Review;
 };
-export type Settings = { repo: string; branch: string; members: Member[] };
+export type Settings = {
+  teamId?: string;
+  name?: string;
+  ownerId?: string;
+  repo: string;
+  branch: string;
+  members: Member[];
+};
 export type Workspace = {
   mode: "demo" | "live";
   commits: Commit[];

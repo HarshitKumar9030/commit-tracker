@@ -17,7 +17,10 @@ export async function POST(req: Request) {
     )
       .collection<Commit & { _id: string }>("commits")
       .updateOne(
-        { _id: `${s.repo}:${s.branch}:${input.sha}`, assignee: u.id },
+        {
+          _id: `${s.teamId}:${s.repo}:${s.branch}:${input.sha}`,
+          assignee: u.id,
+        },
         {
           $set: {
             review: {

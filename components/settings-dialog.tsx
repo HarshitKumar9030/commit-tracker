@@ -1,28 +1,72 @@
 "use client";
 import { useState } from "react";
-import { Copy, Check, GitFork } from "lucide-react";
-import type { Settings } from "@/lib/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { Copy, Check, Plus, Trash2, Users } from "lucide-react";
+import type { Settings, Member } from "@/lib/types";
 import { Modal } from "./primitives";
 export default function SettingsDialog({
   settings,
   demo,
+  userId,
   save,
   close,
 }: {
   settings: Settings;
   demo: boolean;
+  userId: string;
   save: (s: Settings) => Promise<void>;
   close: () => void;
 }) {
-  const [value, setValue] = useState(settings),
+  const [value, setValue] = useState({
+      ...settings,
+      name: settings.name || "Hackathon workspace",
+    }),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState("");
+  const canEdit = demo || !settings.ownerId || settings.ownerId === userId;
+  const update = (id: string, patch: Partial<Member>) =>
+    setValue((v) => ({
+      ...v,
+      members: v.members.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    }));
+  async function copy(kind: string) {
+    try {
+      await navigator.clipboard.writeText(
+        kind === "invite"
+          ? `${location.origin}/?team=${value.teamId || "workspace"}`
+          : `${location.origin}/api/webhooks/github?team=${value.teamId || "workspace"}`,
+      );
+      setCopied(kind);
+    } catch {
+      setError("Clipboard unavailable. Copy the team ID below manually.");
+    }
+  }
   return (
-    <Modal title="Repository settings" close={close}>
+    <Modal title="Team settings" close={close}>
       <p className="muted">
-        One repository. Four teammates. A shared sense of direction.
+        Manage the team, members, and monitored repository.
       </p>
+      <div className="team-invite">
+        <div>
+          <small>TEAM ID</small>
+          <code>{value.teamId || "workspace"}</code>
+        </div>
+        <button
+          className="secondary"
+          type="button"
+          onClick={() => copy("invite")}
+        >
+          {copied === "invite" ? <Check size={14} /> : <Copy size={14} />}Copy
+          invite link
+        </button>
+      </div>
+      {!canEdit && (
+        <p className="setup-note">
+          Only the team creator can change these settings. You can copy the
+          invite link to share with a teammate.
+        </p>
+      )}
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -37,95 +81,153 @@ export default function SettingsDialog({
           }
         }}
       >
-        <label className="field">
-          GitHub repository
-          <div className="input-icon">
-            <GitFork size={17} />
+        <fieldset disabled={!canEdit} className="settings-fields">
+          <label className="field">
+            Team name
             <input
               required
-              pattern="[\w.\-]+/[\w.\-]+"
-              value={value.repo}
-              onChange={(e) => setValue({ ...value, repo: e.target.value })}
-              placeholder="owner/repository"
+              minLength={2}
+              maxLength={60}
+              value={value.name}
+              onChange={(e) => setValue({ ...value, name: e.target.value })}
             />
+          </label>
+          <div className="two-fields">
+            <label className="field">
+              GitHub repository
+              <input
+                required
+                pattern="[\w.\-]+/[\w.\-]+"
+                value={value.repo}
+                onChange={(e) => setValue({ ...value, repo: e.target.value })}
+                placeholder="owner/repository"
+              />
+            </label>
+            <label className="field">
+              Branch
+              <input
+                required
+                value={value.branch}
+                onChange={(e) => setValue({ ...value, branch: e.target.value })}
+              />
+            </label>
           </div>
-        </label>
-        <label className="field">
-          Branch
-          <input
-            required
-            value={value.branch}
-            onChange={(e) => setValue({ ...value, branch: e.target.value })}
-          />
-        </label>
-        <h3>Your four-person crew</h3>
-        <p className="muted">
-          GitHub usernames let Relay avoid assigning authors their own code.
-        </p>
-        <div className="member-fields">
-          {value.members.map((m, i) => (
-            <div key={m.id}>
-              <label className="field">
-                Name
-                <input
-                  required
-                  aria-label={`Member ${i + 1} name`}
-                  value={m.name}
-                  onChange={(e) =>
-                    setValue({
-                      ...value,
-                      members: value.members.map((v, j) =>
-                        j === i ? { ...v, name: e.target.value } : v,
-                      ),
-                    })
-                  }
-                />
-              </label>
-              <label className="field">
-                GitHub username
-                <input
-                  required
-                  pattern="[a-zA-Z0-9\-]+"
-                  aria-label={`Member ${i + 1} GitHub username`}
-                  value={m.login}
-                  onChange={(e) =>
-                    setValue({
-                      ...value,
-                      members: value.members.map((v, j) =>
-                        j === i ? { ...v, login: e.target.value } : v,
-                      ),
-                    })
-                  }
-                />
-              </label>
-            </div>
-          ))}
-        </div>
+          <div className="member-list-heading">
+            <h3>
+              <Users size={15} />
+              Members <span>{value.members.length}/20</span>
+            </h3>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="secondary"
+              type="button"
+              disabled={value.members.length >= 20}
+              onClick={() =>
+                setValue((v) => ({
+                  ...v,
+                  members: [
+                    ...v.members,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "",
+                      login: "",
+                      role: "Developer",
+                      focus: "Not set",
+                      color: ["purple", "pink", "orange", "blue"][
+                        v.members.length % 4
+                      ],
+                    },
+                  ],
+                }))
+              }
+            >
+              <Plus size={14} />
+              Add member
+            </motion.button>
+          </div>
+          <AnimatePresence initial={false}>
+            {value.members.map((m, i) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                key={m.id}
+                className="editable-member"
+              >
+                <div className="editable-member-top">
+                  <span>
+                    Member {i + 1}
+                    {m.id === value.ownerId ? " · Creator" : ""}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${m.name || `member ${i + 1}`}`}
+                    className="icon-button"
+                    disabled={m.id === userId || value.members.length <= 1}
+                    onClick={() =>
+                      setValue((v) => ({
+                        ...v,
+                        members: v.members.filter((n) => n.id !== m.id),
+                      }))
+                    }
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div className="two-fields">
+                  <label className="field">
+                    Name
+                    <input
+                      required
+                      aria-label={`Member ${i + 1} name`}
+                      maxLength={60}
+                      value={m.name}
+                      onChange={(e) => update(m.id, { name: e.target.value })}
+                    />
+                  </label>
+                  <label className="field">
+                    GitHub username
+                    <input
+                      required
+                      pattern="[a-zA-Z0-9-]+"
+                      aria-label={`Member ${i + 1} GitHub username`}
+                      value={m.login}
+                      onChange={(e) => update(m.id, { login: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <label className="field role-field">
+                  Role
+                  <input
+                    maxLength={80}
+                    aria-label={`Member ${i + 1} role`}
+                    value={m.role}
+                    onChange={(e) => update(m.id, { role: e.target.value })}
+                  />
+                </label>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </fieldset>
         <div className="setup-note">
-          <strong>Connect your push events</strong>
+          <strong>GitHub webhook</strong>
           <p>
-            In GitHub → Settings → Webhooks, add this URL with application/json,
-            the secret from GITHUB_WEBHOOK_SECRET, and push events.
+            Use this URL with application/json, your GITHUB_WEBHOOK_SECRET, and
+            push events. Share the access code separately from the invite link.
           </p>
           <button
-            type="button"
             className="copy-url"
-            onClick={async () => {
-              await navigator.clipboard.writeText(
-                `${location.origin}/api/webhooks/github`,
-              );
-              setCopied(true);
-            }}
+            type="button"
+            onClick={() => copy("webhook")}
           >
-            {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
-            /api/webhooks/github
+            {copied === "webhook" ? <Check size={14} /> : <Copy size={14} />}
+            Copy team webhook URL
           </button>
         </div>
         {demo && (
-          <p className="muted">
-            Demo changes stay in this browser. Add your environment variables to
-            enable MongoDB and live GitHub sync.
-          </p>
+          <p className="muted">Demo changes are saved in this browser.</p>
         )}
         {error && (
           <p role="alert" className="error">
@@ -134,11 +236,13 @@ export default function SettingsDialog({
         )}
         <div className="dialog-actions">
           <button type="button" className="secondary" onClick={close}>
-            Cancel
+            Close
           </button>
-          <button className="primary" disabled={busy}>
-            {busy ? "Saving…" : "Save settings"}
-          </button>
+          {canEdit && (
+            <button className="primary" disabled={busy}>
+              {busy ? "Saving…" : "Save settings"}
+            </button>
+          )}
         </div>
       </form>
     </Modal>

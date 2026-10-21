@@ -186,7 +186,7 @@ try {
         .db(process.env.MONGODB_DB || "relay")
         .collection("commits")
         .updateOne(
-          { _id: `${repo}:${branch}:${commit.sha}` },
+          { _id: `workspace:${repo}:${branch}:${commit.sha}` },
           commit.review
             ? { $set: { review: commit.review } }
             : { $unset: { review: "" } },

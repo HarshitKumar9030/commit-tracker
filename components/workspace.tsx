@@ -1,4 +1,9 @@
 "use client";
+import { motion } from "framer-motion";
+import Onboarding from "./onboarding";
+import LiveSignal from "./live-signal";
+import SignalMap from "./signal-map";
+import AnimatedCount from "./animated-count";
 import { useState } from "react";
 import {
   Link2,
@@ -20,6 +25,7 @@ import {
   LogOut,
   Radio,
   X,
+  Plus,
 } from "lucide-react";
 import type { Commit, Review, Settings } from "@/lib/types";
 import { Avatar, Empty, Modal } from "./primitives";
@@ -58,94 +64,27 @@ export default function Workspace() {
     [menu, setMenu] = useState(false),
     [identity, setIdentity] = useState(false),
     [focus, setFocus] = useState<string | null>(null),
-    [code, setCode] = useState(""),
-    [loginId, setLoginId] = useState("harshit"),
-    [joining, setJoining] = useState(false);
+    [teamPortal, setTeamPortal] = useState(false);
   const notify = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(""), 4500);
   };
-  async function join(e: React.FormEvent) {
-    e.preventDefault();
-    setJoining(true);
-    try {
-      await api("session", { id: loginId, code });
-      await refresh();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setJoining(false);
-    }
-  }
   if (loading)
     return (
       <div className="loading">
         <Link2 size={40} />
-        <p>Finding your team’s rhythm…</p>
+        <p>Loading workspace…</p>
       </div>
     );
-  if (locked)
+  if (locked || teamPortal)
     return (
-      <div className="join-page">
-        <div className="join-brand">
-          <Link2 />
-          relay
-        </div>
-        <div className="join-content">
-          <span className="join-label">YOUR HACKATHON, IN SYNC</span>
-          <h1>
-            Great things happen
-            <br />
-            when we build together.
-          </h1>
-          <p>
-            Join your four-person workspace. Catch up on the code,
-            <br />
-            take a review, and keep your team moving.
-          </p>
-          <form onSubmit={join}>
-            <h2>Welcome to your workspace</h2>
-            <label className="field">
-              Who are you?
-              <select
-                value={loginId}
-                onChange={(e) => setLoginId(e.target.value)}
-              >
-                {locked.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              Workspace access code
-              <input
-                required
-                type="password"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Your team’s shared code"
-              />
-            </label>
-            {error && (
-              <p role="alert" className="error">
-                {error}
-              </p>
-            )}
-            <button className="primary" disabled={joining}>
-              {joining ? "Joining…" : "Join workspace"}
-              <ArrowRight size={17} />
-            </button>
-            <a className="demo-link" href="/?demo=1">
-              Explore the demo first <ArrowUpRight size={13} />
-            </a>
-          </form>
-          <p className="join-foot">
-            Four people. Different strengths. One shared pulse.
-          </p>
-        </div>
-      </div>
+      <Onboarding
+        onSuccess={async () => {
+          setTeamPortal(false);
+          await refresh();
+        }}
+        onCancel={data ? () => setTeamPortal(false) : undefined}
+      />
     );
   if (!data)
     return (
@@ -184,7 +123,7 @@ export default function Workspace() {
         notify(
           r.added
             ? `${r.added} new commits. Your team is up to date.`
-            : "All caught up. No new commits.",
+            : "No new commits.",
         );
       }
     } catch (e) {
@@ -194,7 +133,10 @@ export default function Workspace() {
     }
   }
   async function saveSettings(s: Settings) {
-    if (new Set(s.members.map((m) => m.login.toLowerCase())).size !== 4)
+    if (
+      new Set(s.members.map((m) => m.login.toLowerCase())).size !==
+      s.members.length
+    )
       throw new Error("Each teammate needs a unique GitHub username.");
     if (data!.mode === "demo") setData({ ...data!, settings: s });
     else {
@@ -227,7 +169,7 @@ export default function Workspace() {
     }
     notify(
       verdict === "approved"
-        ? "Review shared. One less thing on your team’s mind."
+        ? "Review saved."
         : "Feedback shared with the team.",
     );
   }
@@ -248,7 +190,7 @@ export default function Workspace() {
       await refresh();
     }
     setFocus(null);
-    notify("Your focus is updated.");
+    notify("Current task updated.");
   }
   const navigate = (name: string) => {
     setPage(name);
@@ -273,6 +215,13 @@ export default function Workspace() {
               className={`nav-item ${page === name ? "active" : ""}`}
               onClick={() => navigate(name)}
             >
+              {page === name && (
+                <motion.span
+                  layoutId="nav-selection"
+                  className="nav-highlight"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
               <Icon size={19} />
               {name}
               {name === "My reviews" && mine.length > 0 && (
@@ -289,15 +238,18 @@ export default function Workspace() {
           </div>
           <button className="nav-item" onClick={() => setSettingsOpen(true)}>
             <SettingsIcon size={18} />
-            Repository settings
+            Team settings
           </button>
           <button
             className="workspace-switch"
             onClick={() => setIdentity(true)}
           >
-            <span className="workspace-initial">H</span>
+            <span className="workspace-initial">
+              {(data.settings.name || "Team")[0]}
+            </span>
             <span>
-              Hackathon workspace<small>Four minds. One mission.</small>
+              {data.settings.name || "Hackathon workspace"}
+              <small>{data.settings.members.length} members</small>
             </span>
             <ChevronDown size={14} />
           </button>
@@ -327,7 +279,7 @@ export default function Workspace() {
             <span
               className={`connection ${connection === "Live workspace" ? "connected" : ""}`}
             >
-              <span />
+              <LiveSignal active={connection === "Live workspace"} />
               {connection}
             </span>
             <div className="avatar-stack">
@@ -345,30 +297,36 @@ export default function Workspace() {
             </button>
           </div>
         </header>
-        <div className="page-content">
+        <motion.div
+          className="page-content"
+          key={page}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
           <div className="page-heading">
             <div>
               <h1>
                 {page === "Commit feed"
-                  ? "Stay in sync. Keep building."
+                  ? "Repository activity"
                   : page === "My reviews"
-                    ? "A fresh pair of eyes."
+                    ? "Review queue"
                     : page === "Team"
-                      ? "Different focus. Same team."
+                      ? "Team members"
                       : page === "Presentation"
-                        ? "Tell the story behind the code."
-                        : "Your team’s shared pulse."}
+                        ? "Project recap"
+                        : "Overview"}
               </h1>
               <p>
                 {page === "Commit feed"
-                  ? "Every commit, a little more context. Your team’s progress, all in one place."
+                  ? "View commits, inspect code changes, and assign reviews."
                   : page === "My reviews"
-                    ? "Your review queue. Help your teammates ship with confidence."
+                    ? "Commits assigned to you for review."
                     : page === "Team"
-                      ? "Know who’s here, what’s moving, and where you can help."
+                      ? "View member status, roles, and current tasks."
                       : page === "Presentation"
-                        ? "Turn what you’ve shipped into something worth sharing."
-                        : "A little perspective on everything you’re building together."}
+                        ? "Export commit history and review notes for your presentation."
+                        : "Commit totals, pending reviews, and team status."}
               </p>
             </div>
           </div>
@@ -385,6 +343,7 @@ export default function Workspace() {
               online={online}
               userId={user.id}
               onFocus={setFocus}
+              onManage={() => setSettingsOpen(true)}
             />
           ) : (
             <div className="dashboard-grid">
@@ -406,7 +365,11 @@ export default function Workspace() {
                       label: "Reviewed",
                       icon: "reviewed",
                     },
-                    { value: 4, label: "Team members", icon: "team" },
+                    {
+                      value: data.settings.members.length,
+                      label: "Team members",
+                      icon: "team",
+                    },
                   ].map((m, i) => (
                     <button
                       key={m.label}
@@ -434,7 +397,7 @@ export default function Workspace() {
                           <Users size={17} />
                         )}
                       </span>
-                      <strong>{m.value.toString().padStart(2, "0")}</strong>
+                      <AnimatedCount value={m.value} />
                       <span>{m.label}</span>
                     </button>
                   ))}
@@ -445,13 +408,13 @@ export default function Workspace() {
                     <div>
                       <h3>
                         {mine.length
-                          ? `${mine.length} commits could use your perspective.`
-                          : "You have room to focus."}
+                          ? `${mine.length} commits assigned to you.`
+                          : "No pending reviews"}
                       </h3>
                       <p>
                         {mine.length
-                          ? "A quick review keeps the whole team moving."
-                          : "Your review queue is clear. Keep making your next big thing."}
+                          ? "Open the queue to inspect diffs and submit feedback."
+                          : "No pending reviews assigned to you."}
                       </p>
                     </div>
                     <button
@@ -532,15 +495,15 @@ export default function Workspace() {
                         search
                           ? "No matching commits"
                           : page === "My reviews"
-                            ? "All clear. Keep building."
-                            : "A fresh start for your team."
+                            ? "No pending reviews"
+                            : "No commits yet"
                       }
                       detail={
                         search
                           ? "Try a title, author, or commit SHA."
                           : page === "My reviews"
                             ? "New reviews will appear here when your teammates push code."
-                            : "Sync commits to bring your repository into the conversation."
+                            : "Click Sync commits to import recent repository commits."
                       }
                     />
                   )}
@@ -548,15 +511,17 @@ export default function Workspace() {
                 <div className="feed-end">
                   <span className="mini-dot" />
                   {visible.length
-                    ? "You’re all caught up. Back to building."
-                    : "Your next idea starts here."}
+                    ? "End of commit list"
+                    : "No commits to display"}
                 </div>
               </section>
               <aside className="right-rail">
                 <section className="team-panel">
                   <div className="panel-heading">
                     <h2>Your team</h2>
-                    <span>{online.length}/4 online</span>
+                    <span>
+                      {online.length}/{data.settings.members.length} online
+                    </span>
                   </div>
                   <div className="team-list">
                     {data.settings.members.map((m) => (
@@ -594,30 +559,21 @@ export default function Workspace() {
                     className="team-footer"
                     onClick={() => setFocus(user.focus)}
                   >
-                    What are you working on? <ArrowUpRight size={15} />
+                    Update your current task <ArrowUpRight size={15} />
                   </button>
                 </section>
                 <section className="pitch-panel">
-                  <div className="pitch-icon">
-                    <Monitor size={20} />
-                    <span className="spark">✳</span>
-                  </div>
-                  <h2>
-                    Make room for
-                    <br />
-                    the big picture.
-                  </h2>
+                  <SignalMap compact />
+                  <h2>Project recap</h2>
                   <p>
-                    Your commits become your story. Build a presentation-ready
-                    recap while your team keeps shipping.
+                    Export commit descriptions and review notes for your
+                    presentation.
                   </p>
                   <button onClick={() => navigate("Presentation")}>
-                    Open presentation
+                    Open recap
                     <ArrowUpRight size={16} />
                   </button>
-                  <span className="pitch-foot">
-                    Less catching up. More creating.
-                  </span>
+                  <span className="pitch-foot">Export as Markdown</span>
                 </section>
                 <div className="repo-caption">
                   <GitFork size={14} />
@@ -636,15 +592,15 @@ export default function Workspace() {
           <footer className="page-footer">
             <span>
               <Link2 size={14} />
-              Made for teams that ship together.
+              Relay · Commit tracker
             </span>
             <span>
               {data.mode === "demo"
                 ? "Demo mode · Changes saved in this browser"
-                : "MongoDB connected · Built for your four-person crew"}
+                : "MongoDB connected"}
             </span>
           </footer>
-        </div>
+        </motion.div>
       </main>
       {toast && (
         <div className="toast" role="status">
@@ -670,16 +626,17 @@ export default function Workspace() {
       {settingsOpen && (
         <SettingsDialog
           settings={data.settings}
+          userId={user.id}
           demo={data.mode === "demo"}
           save={saveSettings}
           close={() => setSettingsOpen(false)}
         />
       )}
       {identity && (
-        <Modal title="Your workspace" close={() => setIdentity(false)}>
+        <Modal title="Team group" close={() => setIdentity(false)}>
           <p className="muted">
             {data.mode === "demo"
-              ? "Explore the demo as any teammate."
+              ? "Switch profiles to test the demo."
               : "Signed in with your team’s shared access code."}
           </p>
           {data.settings.members.map((m) => (
@@ -700,6 +657,15 @@ export default function Workspace() {
               {m.id === user.id && <Check size={17} />}
             </button>
           ))}
+          <button
+            className="primary leave-demo"
+            onClick={() => {
+              setIdentity(false);
+              setTeamPortal(true);
+            }}
+          >
+            Create or join another team <Plus size={15} />
+          </button>
           {data.mode === "demo" ? (
             <a className="primary leave-demo" href="/">
               Return to live workspace <ArrowRight size={16} />
@@ -720,10 +686,8 @@ export default function Workspace() {
         </Modal>
       )}
       {focus !== null && (
-        <Modal title="Find your focus" close={() => setFocus(null)}>
-          <p className="muted">
-            Let your teammates know what has your attention.
-          </p>
+        <Modal title="Update current task" close={() => setFocus(null)}>
+          <p className="muted">Your current task is visible to your team.</p>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -735,7 +699,7 @@ export default function Workspace() {
             }}
           >
             <label className="field">
-              I’m working on…
+              Current task
               <input
                 required
                 maxLength={100}

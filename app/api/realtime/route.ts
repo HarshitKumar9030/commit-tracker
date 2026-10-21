@@ -11,7 +11,7 @@ export async function GET() {
       clientId: u.id,
       ttl: 3600000,
       capability: JSON.stringify({
-        "relay:workspace": ["subscribe", "presence"],
+        [`relay:${u.teamId}`]: ["subscribe", "presence"],
       }),
     });
     return Response.json(token, { headers: { "Cache-Control": "no-store" } });

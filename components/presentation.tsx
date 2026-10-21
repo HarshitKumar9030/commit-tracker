@@ -11,10 +11,8 @@ export default function Presentation({ data }: { data: Workspace }) {
       <div className="presentation-top">
         <div>
           <Sparkles size={24} />
-          <h2>From commits to a compelling story.</h2>
-          <p>
-            The work is already there. Here’s the context for your next pitch.
-          </p>
+          <h2>Project summary</h2>
+          <p>Copy or export the latest commits and approved review notes.</p>
         </div>
         <div className="action-row">
           <button
@@ -46,11 +44,11 @@ export default function Presentation({ data }: { data: Workspace }) {
         </div>
       </div>
       <div className="story-section">
-        <span className="section-number">01 / THE BUILD</span>
-        <h2>Small changes. Real progress.</h2>
+        <span className="section-number">COMMITS</span>
+        <h2>Recent changes</h2>
         <p>
           {data.commits.length} commits from a team of{" "}
-          {data.settings.members.length}. One shared vision.
+          {data.settings.members.length}.
         </p>
         {data.commits.map((c) => (
           <article className="story-row" key={c.sha}>
@@ -71,8 +69,8 @@ export default function Presentation({ data }: { data: Workspace }) {
         ))}
       </div>
       <div className="story-section lavender">
-        <span className="section-number">02 / THE CONFIDENCE</span>
-        <h2>Context your whole team can trust.</h2>
+        <span className="section-number">REVIEWS</span>
+        <h2>Approved reviews</h2>
         <p>{approved.length} changes reviewed by a teammate.</p>
         {approved.map((c) => (
           <blockquote key={c.sha}>

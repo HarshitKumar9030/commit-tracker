@@ -1,4 +1,6 @@
 "use client";
+import SignalMap from "./signal-map";
+import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { X, GitCommitHorizontal, Check, MessageCircle } from "lucide-react";
 import type { Member, Commit } from "@/lib/types";
@@ -34,11 +36,13 @@ export function Status({ commit }: { commit: Commit }) {
       ) : (
         <span className="mini-dot" />
       )}
-      {commit.review?.verdict === "approved"
-        ? "Reviewed"
-        : commit.review
-          ? "Changes requested"
-          : "Needs review"}
+      {!commit.assignee
+        ? "Unassigned"
+        : commit.review?.verdict === "approved"
+          ? "Reviewed"
+          : commit.review
+            ? "Changes requested"
+            : "Needs review"}
     </span>
   );
 }
@@ -90,8 +94,17 @@ export function Modal({
     };
   }, []);
   return (
-    <div className="modal-backdrop" onClick={close}>
-      <section
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      className="modal-backdrop"
+      onClick={close}
+    >
+      <motion.section
+        initial={{ opacity: 0, scale: 0.97, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 350, damping: 30 }}
         ref={ref}
         role="dialog"
         aria-modal="true"
@@ -110,14 +123,14 @@ export function Modal({
           </button>
         </header>
         {children}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 export function Empty({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="empty">
-      <GitCommitHorizontal size={36} />
+      <SignalMap compact />
       <h3>{title}</h3>
       <p>{detail}</p>
     </div>

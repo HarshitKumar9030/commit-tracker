@@ -1,31 +1,42 @@
 import { cookies } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { ApiError, failure, settings, sign } from "@/lib/server";
+import { ApiError, db, failure, settings, issueSession } from "@/lib/server";
+import { verifyCode } from "@/lib/team-security";
 export async function POST(req: Request) {
   try {
-    const { id, code } = z
-      .object({ id: z.string(), code: z.string().max(200) })
+    const { id, code, teamId } = z
+      .object({
+        teamId: z
+          .string()
+          .regex(/^[a-zA-Z0-9-]+$/)
+          .default("workspace"),
+        id: z.string().optional(),
+        code: z.string().max(200),
+      })
       .parse(await req.json());
-    const expected = process.env.TEAM_ACCESS_CODE;
-    if (!expected)
-      throw new ApiError(503, "Set TEAM_ACCESS_CODE to enable team access.");
-    const a = Buffer.from(code),
-      b = Buffer.from(expected);
-    if (a.length !== b.length || !timingSafeEqual(a, b))
-      throw new ApiError(401, "That workspace code is incorrect.");
-    if (!(await settings()).members.some((m) => m.id === id))
+    const record = await (
+      await db()
+    )
+      .collection<{ _id: string; codeHash?: string }>("settings")
+      .findOne({ _id: teamId });
+    let valid = false;
+    if (record?.codeHash) valid = verifyCode(code, record.codeHash);
+    else if (teamId === "workspace" && process.env.TEAM_ACCESS_CODE) {
+      const a = Buffer.from(code),
+        b = Buffer.from(process.env.TEAM_ACCESS_CODE);
+      valid = a.length === b.length && timingSafeEqual(a, b);
+    }
+    if (!valid) throw new ApiError(401, "Check your team ID and access code.");
+    const s = await settings(teamId);
+    if (!id)
+      return Response.json({
+        members: s.members.map(({ id, name, color }) => ({ id, name, color })),
+        name: s.name,
+      });
+    if (!s.members.some((m) => m.id === id))
       throw new ApiError(400, "Choose a team member.");
-    const body = Buffer.from(
-      JSON.stringify({ id, exp: Date.now() + 7 * 86400000 }),
-    ).toString("base64url");
-    (await cookies()).set("relay-session", `${body}.${sign(body)}`, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 86400,
-    });
+    await issueSession(id, teamId);
     return Response.json({ ok: true });
   } catch (e) {
     return failure(e);

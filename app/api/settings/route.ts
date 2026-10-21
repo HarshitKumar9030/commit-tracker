@@ -1,17 +1,25 @@
-import type { Settings } from "@/lib/types";
+import type { Settings, Commit } from "@/lib/types";
 import { z } from "zod";
-import { user, db, publish, failure } from "@/lib/server";
+import { user, settings, db, publish, failure, ApiError } from "@/lib/server";
+import { assignReviewer } from "@/lib/rules";
 export async function POST(req: Request) {
   try {
-    await user();
-    const data = z
+    const u = await user();
+    const current = await settings();
+    if (current.ownerId && current.ownerId !== u.id)
+      throw new ApiError(
+        403,
+        "Only the team creator can manage members and repository settings.",
+      );
+    const input = z
       .object({
+        name: z.string().trim().min(2).max(60),
         repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
         branch: z.string().min(1).max(100),
         members: z
           .array(
             z.object({
-              id: z.enum(["harshit", "aanya", "rohan", "dev"]),
+              id: z.string().min(1).max(80),
               name: z.string().trim().min(1).max(60),
               login: z.string().regex(/^[a-zA-Z0-9-]+$/),
               role: z.string().max(80),
@@ -19,19 +27,60 @@ export async function POST(req: Request) {
               color: z.enum(["purple", "pink", "orange", "blue"]),
             }),
           )
-          .length(4)
+          .min(1)
+          .max(20)
           .refine(
             (ms) =>
-              new Set(ms.map((m) => m.id)).size === 4 &&
-              new Set(ms.map((m) => m.login.toLowerCase())).size === 4,
+              new Set(ms.map((m) => m.id)).size === ms.length &&
+              new Set(ms.map((m) => m.login.toLowerCase())).size === ms.length,
+            "Every teammate needs a unique identity and GitHub username.",
           ),
       })
       .parse(await req.json());
-    await (
-      await db()
-    )
-      .collection<Settings & { _id: string }>("settings")
-      .updateOne({ _id: "workspace" }, { $set: data }, { upsert: true });
+    if (!input.members.some((m) => m.id === u.id))
+      throw new ApiError(400, "Keep yourself in the team.");
+    const database = await db();
+    await database.collection<Settings & { _id: string }>("settings").updateOne(
+      { _id: u.teamId },
+      {
+        $set: {
+          ...input,
+          teamId: u.teamId,
+          ownerId: current.ownerId || u.id,
+        },
+      },
+      { upsert: true },
+    );
+    const removed = current.members
+      .filter((m) => !input.members.some((n) => n.id === m.id))
+      .map((m) => m.id);
+    {
+      const col = database.collection<Commit & { _id: string; teamId: string }>(
+        "commits",
+      );
+      const pending = await col
+        .find({
+          teamId: u.teamId,
+          assignee: { $in: [...removed, ""] },
+          review: { $exists: false },
+        })
+        .toArray();
+      for (const c of pending) {
+        const eligible = input.members.filter(
+          (m) => m.login.toLowerCase() !== c.author.toLowerCase(),
+        );
+        await col.updateOne(
+          { _id: c._id },
+          {
+            $set: {
+              assignee: eligible.length
+                ? assignReviewer(c.sha, c.author, input.members)
+                : "",
+            },
+          },
+        );
+      }
+    }
     await publish();
     return Response.json({ ok: true });
   } catch (e) {

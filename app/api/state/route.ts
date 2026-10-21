@@ -17,8 +17,13 @@ export async function GET() {
     const commits = await (
       await db()
     )
-      .collection<Commit & { _id: string; repo: string }>("commits")
-      .find({ repo: s.repo, branch: s.branch }, { projection: { _id: 0 } })
+      .collection<Commit & { _id: string; repo: string; teamId?: string }>(
+        "commits",
+      )
+      .find(
+        { repo: s.repo, branch: s.branch, teamId: s.teamId },
+        { projection: { _id: 0 } },
+      )
       .sort({ date: -1 })
       .limit(100)
       .toArray();

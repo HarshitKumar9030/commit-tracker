@@ -10,12 +10,12 @@ export async function POST(req: Request) {
     const s = await settings();
     const col = (await db()).collection<Settings & { _id: string }>("settings");
     await col.updateOne(
-      { _id: "workspace" },
+      { _id: u.teamId },
       { $setOnInsert: s },
       { upsert: true },
     );
     await col.updateOne(
-      { _id: "workspace", "members.id": u.id },
+      { _id: u.teamId, "members.id": u.id },
       { $set: { "members.$.focus": focus } },
     );
     await publish();

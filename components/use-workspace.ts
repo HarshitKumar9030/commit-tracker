@@ -20,7 +20,8 @@ function readDemo(): Workspace {
       const value = JSON.parse(saved);
       if (
         value.mode === "demo" &&
-        value.settings?.members?.length === 4 &&
+        value.settings?.members?.length > 0 &&
+        value.settings.members.length <= 20 &&
         Array.isArray(value.commits)
       )
         return value;
@@ -93,7 +94,9 @@ export function useWorkspace() {
         transports: ["web_socket"],
         autoConnect: true,
       });
-      const channel = client.channels.get("relay:workspace");
+      const channel = client.channels.get(
+        `relay:${data.settings.teamId || "workspace"}`,
+      );
       client.connection.on((change) => {
         if (stopped) return;
         setConnection(
@@ -125,7 +128,13 @@ export function useWorkspace() {
       client?.close();
       setOnline([]);
     };
-  }, [data?.mode, data?.userId, data?.realtime, refresh]); // Reconnect only when identity or availability changes.
+  }, [
+    data?.mode,
+    data?.userId,
+    data?.realtime,
+    data?.settings.teamId,
+    refresh,
+  ]); // Reconnect only when identity or availability changes.
   return {
     data,
     setData,

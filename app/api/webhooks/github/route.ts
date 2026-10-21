@@ -13,7 +13,8 @@ export async function POST(req: Request) {
     if (req.headers.get("x-github-event") !== "push")
       return Response.json({ ignored: true });
     const payload = JSON.parse(raw);
-    const s = await settings();
+    const teamId = new URL(req.url).searchParams.get("team") || "workspace";
+    const s = await settings(teamId);
     if (
       payload.repository?.full_name.toLowerCase() !== s.repo.toLowerCase() ||
       payload.ref !== `refs/heads/${s.branch}` ||
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     ]
       .filter((x) => /^[a-f0-9]{40}$/.test(x))
       .slice(0, 100);
-    const added = await ingest(s.repo, s.branch, shas);
+    const added = await ingest(s.repo, s.branch, shas, teamId);
     return Response.json({ added });
   } catch (e) {
     return failure(e);

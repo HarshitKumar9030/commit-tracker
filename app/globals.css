@@ -2109,3 +2109,253 @@ button:active:not(:disabled) {
     font-size: 11px;
   }
 }
+.signal-map {
+  display: block;
+  color: var(--purple);
+  width: 230px;
+  height: 95px;
+  margin: 0 auto 12px;
+  overflow: visible;
+}
+.signal-map.compact {
+  width: 100%;
+  height: 90px;
+  margin: -10px 0 10px;
+}
+.join-content {
+  margin-top: 35px;
+}
+.join-content h1 {
+  margin-top: 12px;
+  font-size: 36px;
+  letter-spacing: -1.2px;
+}
+.join-content form {
+  margin-top: 20px;
+  max-width: 440px;
+}
+.onboarding-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 23px;
+}
+.onboarding-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  padding: 11px 17px;
+  border-radius: 8px;
+  color: #9684a7;
+}
+.onboarding-tabs .selected {
+  background: #e9e0fa;
+  color: var(--purple);
+}
+.two-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.two-fields .field {
+  min-width: 0;
+}
+.onboarding-help {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #9987aa;
+  margin-top: 15px;
+}
+.onboarding-close {
+  margin-left: auto;
+}
+.team-invite {
+  margin: 20px 0;
+  padding: 16px;
+  background: #f4f0fc;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+.team-invite small {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  color: #a18cad;
+  margin-bottom: 6px;
+}
+.team-invite code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.team-invite .secondary {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.settings-fields {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  border: 0;
+}
+.member-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 25px 0 16px;
+}
+.member-list-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.member-list-heading h3 > span {
+  font-size: 10px;
+  color: #b19cbf;
+  margin-left: 4px;
+}
+.editable-member {
+  background: #f8f6fb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.editable-member-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #9985a9;
+}
+.editable-member .field {
+  margin: 9px 0;
+}
+.editable-member input {
+  background: white;
+}
+.editable-member .role-field {
+  max-width: 100%;
+}
+.commit-row:hover {
+  transform: none;
+}
+.brand svg {
+  animation: brand-intro 1s ease both;
+}
+@keyframes brand-intro {
+  from {
+    transform: rotate(-35deg) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+}
+.presence-dot.online {
+  animation: presence-pulse 2.4s ease-in-out infinite;
+}
+@keyframes presence-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+}
+.primary svg,
+.text-button svg {
+  transition: transform 0.2s;
+}
+.primary:hover svg,
+.text-button:hover svg {
+  transform: translateX(2px);
+}
+.team-card {
+  transition: background 0.2s;
+}
+.team-card:hover {
+  background: #fefcff;
+}
+@media (max-width: 700px) {
+  .two-fields {
+    gap: 10px;
+  }
+  .team-invite {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .join-content h1 {
+    font-size: 30px;
+  }
+  .signal-map {
+    width: 200px;
+    height: 80px;
+  }
+  .join-content {
+    margin-top: 30px;
+  }
+  .join-content form {
+    padding: 22px;
+  }
+  .onboarding-tabs button {
+    font-size: 11px;
+  }
+  .team-invite .secondary {
+    width: 100%;
+  }
+}
+.nav-item {
+  position: relative;
+  isolation: isolate;
+}
+.nav-item.active {
+  background: transparent;
+}
+.nav-highlight {
+  position: absolute;
+  inset: 0;
+  background: #f1edff;
+  border-radius: 9px;
+  z-index: -1;
+}
+.connection .live-signal {
+  color: #baa4dc;
+}
+.connection.connected .live-signal {
+  color: #62aa8e;
+}
+.empty .signal-map {
+  max-width: 220px;
+  height: 90px;
+  margin-bottom: 20px;
+}
+.join-brand {
+  font-size: 28px;
+}
+.pitch-panel h2 br {
+  display: none;
+}
+.pitch-panel h2 {
+  font-size: 24px;
+}
+.pitch-panel h2 br::after {
+  content: " ";
+}
+.team-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin: -12px 0 22px;
+}
+.team-tools .primary {
+  font-size: 12px;
+}

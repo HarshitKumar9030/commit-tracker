@@ -30,10 +30,17 @@ export default function ReviewDialog({
     [note, setNote] = useState(commit.review?.note || ""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const assignee = members.find((m) => m.id === commit.assignee)!;
+  const assignee = members.find((m) => m.id === commit.assignee) || {
+    id: "former",
+    name: "Unassigned",
+    login: "",
+    role: "",
+    focus: "",
+    color: "purple",
+  };
   async function submit(verdict: Review["verdict"]) {
     if (!note.trim()) {
-      setError("Add a little context for your team before submitting.");
+      setError("Enter a review note before submitting.");
       return;
     }
     setBusy(true);
@@ -47,7 +54,7 @@ export default function ReviewDialog({
     }
   }
   return (
-    <Modal title="A closer look" close={close} wide>
+    <Modal title="Commit diff" close={close} wide>
       <div className="review-heading">
         <Status commit={commit} />
         <h2>{commit.title}</h2>

@@ -12,8 +12,9 @@ async function tick() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: "harshit",
-          code: process.env.TEAM_ACCESS_CODE,
+          id: process.env.WATCH_MEMBER_ID || "harshit",
+          teamId: process.env.WATCH_TEAM_ID || "workspace",
+          code: process.env.WATCH_TEAM_CODE || process.env.TEAM_ACCESS_CODE,
         }),
         signal: AbortSignal.timeout(15000),
       });

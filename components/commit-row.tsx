@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Check, GitBranch } from "lucide-react";
 import type { Commit, Member } from "@/lib/types";
 import { Avatar, Status, relativeDate } from "./primitives";
@@ -13,9 +14,26 @@ export default function CommitRow({
   const author = members.find(
     (m) => m.login.toLowerCase() === c.author.toLowerCase(),
   );
-  const assignee = members.find((m) => m.id === c.assignee)!;
+  const assignee = members.find((m) => m.id === c.assignee) || {
+    id: "former",
+    name: "Unassigned",
+    login: "",
+    role: "",
+    focus: "",
+    color: "purple",
+  };
   return (
-    <button className="commit-row" key={c.sha} onClick={() => onSelect(c)}>
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ x: 3 }}
+      whileTap={{ scale: 0.995 }}
+      transition={{ duration: 0.22 }}
+      className="commit-row"
+      key={c.sha}
+      onClick={() => onSelect(c)}
+    >
       <div
         className={`commit-node ${c.review?.verdict === "approved" ? "done" : ""}`}
       >
@@ -53,6 +71,6 @@ export default function CommitRow({
           </div>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }

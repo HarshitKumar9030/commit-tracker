@@ -5,7 +5,7 @@ export const members: Member[] = [
     name: "Harshit Kumar",
     login: "HarshitKumar9030",
     role: "Full-stack developer",
-    focus: "Building the core",
+    focus: "Core features",
     color: "purple",
   },
   {
@@ -13,7 +13,7 @@ export const members: Member[] = [
     name: "Aanya Sharma",
     login: "aanya",
     role: "Frontend developer",
-    focus: "Crafting the experience",
+    focus: "Frontend UI",
     color: "pink",
   },
   {
@@ -21,7 +21,7 @@ export const members: Member[] = [
     name: "Rohan Patel",
     login: "rohan",
     role: "Backend developer",
-    focus: "Connecting the dots",
+    focus: "Backend API",
     color: "orange",
   },
   {
@@ -29,7 +29,7 @@ export const members: Member[] = [
     name: "Dev Mehta",
     login: "dev",
     role: "Pitch & product",
-    focus: "Making the pitch",
+    focus: "Presentation",
     color: "blue",
   },
 ];
@@ -59,7 +59,7 @@ export function demoWorkspace(): Workspace {
       body:
         i === 0
           ? "Teammates can now see who is online and what everyone is working on. Presence reconnects automatically."
-          : "A small step forward for the hackathon workspace.",
+          : "Updated the project implementation and related files.",
       author: members[i % 4].login,
       date: new Date(Date.now() - (i * 37 + 4) * 60000).toISOString(),
       branch: "main",

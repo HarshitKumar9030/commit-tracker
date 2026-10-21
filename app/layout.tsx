@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import MotionProvider from "@/components/motion-provider";
 export const metadata: Metadata = {
-  title: "Relay — Build together. Stay in sync.",
+  title: "Relay — Commit tracker",
   description:
-    "A shared pulse for your hackathon. Track commits, review changes, and tell your project’s story.",
+    "Track repository commits, review code changes, and manage your hackathon team.",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }
