@@ -96,3 +96,12 @@ Tooltips appear on hover and keyboard focus for sync, filters, search, diff rows
 GSAP animates the SVG connection paths and nodes. Framer Motion handles navigation, counts, cards, dialogs, roster changes, and tour transitions. Both respect the operating system's reduced-motion preference. No sparkle icons or emoji are used.
 
 For the local watcher to monitor a newly created group, set `WATCH_TEAM_ID`, `WATCH_MEMBER_ID`, and `WATCH_TEAM_CODE` in `.env.local`. Without these, it uses the existing local `workspace` group. Use the creator's member ID from the authenticated `/api/state` response. Group-specific webhook URLs provide immediate push delivery after deployment.
+
+
+### Review routing and AI
+
+In Team settings, turn off **Receives code reviews** for teammates working on slides, product, or documentation. Set a default reviewer to route code to one person, or choose manual assignment. Pending commits can be assigned from their diff dialog. Authors are excluded unless **Allow authors to review their own commits** is enabled. Completed reviews keep their recorded reviewer. Available text diffs can be copied or downloaded; GitHub may omit binary or large patches.
+
+**AI analytics & chat** uses Gemini `gemini-3.8-flash`. Add `GEMINI_API_KEY` locally and to Vercel for direct Google access, or use Vercel AI Gateway (`google/gemini-3.8-flash`) with an active billing account. Keys stay on the server. Gateway uses Vercel OIDC on deployments; refresh local OIDC through `vercel env pull` without overwriting your local database configuration.
+
+AI runs only after a button click. Context includes at most 20 commit summaries (14,000 characters total) and six previous messages (6,000 characters total). Optional diff context is capped at four files and 1,800 characters per file. Responses stream as Markdown, with 1,200 output tokens and low thinking effort. Each member gets 20 requests per hour; failed provider attempts also count. Analytics with identical context is reused for 15 minutes. Usage token counts are saved in `ai_usage` for 30 days; MongoDB TTL indexes expire caches and request counters. No complete repository is sent. Demo mode uses labeled local previews without model calls. Review AI output against the original diff.

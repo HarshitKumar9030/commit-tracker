@@ -2536,3 +2536,187 @@ button:active:not(:disabled) {
     max-width: 240px;
   }
 }
+/* Review routing and project assistant */
+select {
+  font: inherit;
+  background: #f2f2f7;
+  color: inherit;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  max-width: 100%;
+  width: 100%;
+}
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.check-field input {
+  accent-color: #7554e8;
+  width: 17px;
+  height: 17px;
+}
+.diff-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.ai-panel {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  min-height: 600px;
+}
+.ai-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.ai-top h2 {
+  font-size: 28px;
+  margin: 10px 0;
+}
+.segmented {
+  display: flex;
+  gap: 5px;
+  background: #f5f4fa;
+  padding: 5px;
+  border-radius: 12px;
+}
+.segmented button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: transparent;
+  padding: 10px;
+  border-radius: 8px;
+}
+.segmented .selected {
+  background: #e9e2ff;
+  color: #6642d8;
+}
+.ai-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 26px 0;
+}
+.ai-stats > div {
+  padding: 22px;
+  background: #f7f7fb;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+}
+.ai-stats strong {
+  font-size: 30px;
+}
+.ai-stats span,
+.ai-budget {
+  font-size: 12px;
+  color: #737487;
+  line-height: 1.7;
+}
+.ai-budget {
+  max-width: 780px;
+  margin-bottom: 24px;
+}
+.ai-messages {
+  max-height: 520px;
+  overflow: auto;
+  padding: 16px 0;
+}
+.ai-message {
+  padding: 20px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  background: #f8f8fb;
+}
+.ai-message.user {
+  background: #f0ebff;
+}
+.ai-compose {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 14px 0;
+}
+.ai-compose textarea {
+  flex: 1;
+  min-height: 90px;
+  background: #f5f5fa;
+  padding: 15px;
+  resize: vertical;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+}
+.markdown {
+  line-height: 1.8;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.markdown pre {
+  background: #f2f2f7;
+  padding: 16px;
+  overflow: auto;
+  border-radius: 10px;
+}
+.markdown code {
+  font-family: monospace;
+}
+.markdown table {
+  display: block;
+  overflow: auto;
+}
+.markdown th,
+.markdown td {
+  padding: 8px;
+  text-align: left;
+}
+.markdown h2 {
+  font-size: 20px;
+  margin-top: 26px;
+}
+.text-button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  background: transparent;
+  color: #7554e8;
+  padding: 8px 0;
+  font-size: 12px;
+}
+.ai-panel .field {
+  margin-top: 22px;
+}
+@media (max-width: 700px) {
+  .ai-panel {
+    padding: 18px;
+  }
+  .ai-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .ai-stats {
+    gap: 8px;
+  }
+  .ai-stats > div {
+    padding: 14px 10px;
+  }
+  .ai-stats strong {
+    font-size: 24px;
+  }
+  .ai-compose {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ai-compose textarea {
+    width: 100%;
+  }
+}

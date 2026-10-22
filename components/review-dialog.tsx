@@ -19,7 +19,7 @@ export default function ReviewDialog({
   allowSelfReview,
   close,
 }: {
-  onAssign: (id:string) => Promise<void>;
+  onAssign: (id: string) => Promise<void>;
   allowSelfReview?: boolean;
   commit: Commit;
   members: Member[];
@@ -83,9 +83,49 @@ export default function ReviewDialog({
         <span className="remove">−{commit.deletions}</span>
       </div>
       <div className="diff-actions">
-        <button className="secondary" onClick={async () => {try {await navigator.clipboard.writeText(formatDiff(commit.files.slice(file,file+1)));setError("File diff copied.");} catch {setError("Clipboard unavailable.");}}}>Copy file diff</button>
-        <button className="secondary" onClick={async () => {try {await navigator.clipboard.writeText(formatDiff(commit.files));setError("All available diffs copied.");} catch {setError("Clipboard unavailable.");}}}>Copy all diffs</button>
-        <button className="secondary" onClick={() => {const url=URL.createObjectURL(new Blob([formatDiff(commit.files)],{type:"text/plain"})); const a=document.createElement("a");a.href=url;a.download=`${commit.sha.slice(0,7)}.diff`;a.click();URL.revokeObjectURL(url);}}>Download diff</button>
+        <button
+          className="secondary"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(
+                formatDiff(commit.files.slice(file, file + 1)),
+              );
+              setError("File diff copied.");
+            } catch {
+              setError("Clipboard unavailable.");
+            }
+          }}
+        >
+          Copy file diff
+        </button>
+        <button
+          className="secondary"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(formatDiff(commit.files));
+              setError("All available diffs copied.");
+            } catch {
+              setError("Clipboard unavailable.");
+            }
+          }}
+        >
+          Copy all diffs
+        </button>
+        <button
+          className="secondary"
+          onClick={() => {
+            const url = URL.createObjectURL(
+              new Blob([formatDiff(commit.files)], { type: "text/plain" }),
+            );
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${commit.sha.slice(0, 7)}.diff`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Download diff
+        </button>
       </div>
       <div className="file-tabs">
         {commit.files.map((f, i) => (
@@ -131,13 +171,49 @@ export default function ReviewDialog({
           Assigned to <strong>{assignee.name}</strong>
         </span>
       </div>
-      {!commit.review && <label className="field">Assign code reviewer
-        <select aria-label="Assign code reviewer" value={commit.assignee} disabled={busy} onChange={async e => {setBusy(true);try {await onAssign(e.target.value);setError("");}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
-          <option value="">Unassigned</option>
-          {members.filter(m => m.receivesReviews !== false && (allowSelfReview || m.login.toLowerCase() !== commit.author.toLowerCase())).map(m => <option key={m.id} value={m.id}>{m.name}{m.login.toLowerCase() === commit.author.toLowerCase() ? " (self-review)" : ""}</option>)}
-        </select>
-      </label>}
-      {error && <p role="status" className="muted">{error}</p>}
+      {!commit.review && (
+        <label className="field">
+          Assign code reviewer
+          <select
+            aria-label="Assign code reviewer"
+            value={commit.assignee}
+            disabled={busy}
+            onChange={async (e) => {
+              setBusy(true);
+              try {
+                await onAssign(e.target.value);
+                setError("");
+              } catch (err) {
+                setError((err as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <option value="">Unassigned</option>
+            {members
+              .filter(
+                (m) =>
+                  m.receivesReviews !== false &&
+                  (allowSelfReview ||
+                    m.login.toLowerCase() !== commit.author.toLowerCase()),
+              )
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.login.toLowerCase() === commit.author.toLowerCase()
+                    ? " (self-review)"
+                    : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+      )}
+      {error && (
+        <p role="status" className="muted">
+          {error}
+        </p>
+      )}
       {commit.review && (
         <div className="review-note">
           <strong>

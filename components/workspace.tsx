@@ -35,6 +35,7 @@ import TeamView from "./team-view";
 import CommitRow from "./commit-row";
 import ReviewDialog from "./review-dialog";
 import SettingsDialog from "./settings-dialog";
+import AIPanel from "./ai-panel";
 import Presentation from "./presentation";
 import { api, useWorkspace } from "./use-workspace";
 const nav = [
@@ -43,6 +44,7 @@ const nav = [
   { name: "My reviews", icon: MessageSquare },
   { name: "Team", icon: Users },
   { name: "Presentation", icon: Monitor },
+  { name: "AI analytics & chat", icon: MessageSquare },
 ];
 export default function Workspace() {
   const {
@@ -323,26 +325,30 @@ export default function Workspace() {
           <div className="page-heading">
             <div>
               <h1>
-                {page === "Commit feed"
-                  ? "Repository activity"
-                  : page === "My reviews"
-                    ? "Review queue"
-                    : page === "Team"
-                      ? "Team members"
-                      : page === "Presentation"
-                        ? "Project recap"
-                        : "Overview"}
+                {page === "AI analytics & chat"
+                  ? "Project assistant"
+                  : page === "Commit feed"
+                    ? "Repository activity"
+                    : page === "My reviews"
+                      ? "Review queue"
+                      : page === "Team"
+                        ? "Team members"
+                        : page === "Presentation"
+                          ? "Project recap"
+                          : "Overview"}
               </h1>
               <p>
-                {page === "Commit feed"
-                  ? "View commits, inspect code changes, and assign reviews."
-                  : page === "My reviews"
-                    ? "Commits assigned to you for review."
-                    : page === "Team"
-                      ? "View member status, roles, and current tasks."
-                      : page === "Presentation"
-                        ? "Export commit history and review notes for your presentation."
-                        : "Commit totals, pending reviews, and team status."}
+                {page === "AI analytics & chat"
+                  ? "Analyze project activity and ask questions about code changes."
+                  : page === "Commit feed"
+                    ? "View commits, inspect code changes, and assign reviews."
+                    : page === "My reviews"
+                      ? "Commits assigned to you for review."
+                      : page === "Team"
+                        ? "View member status, roles, and current tasks."
+                        : page === "Presentation"
+                          ? "Export commit history and review notes for your presentation."
+                          : "Commit totals, pending reviews, and team status."}
               </p>
             </div>
           </div>
@@ -351,7 +357,9 @@ export default function Workspace() {
               {error}
             </p>
           )}
-          {page === "Presentation" ? (
+          {page === "AI analytics & chat" ? (
+            <AIPanel data={data} />
+          ) : page === "Presentation" ? (
             <Presentation data={data} />
           ) : page === "Team" ? (
             <TeamView
@@ -650,9 +658,18 @@ export default function Workspace() {
           userId={user.id}
           allowSelfReview={data.settings.allowSelfReview}
           onAssign={async (id) => {
-            if (data.mode === "demo") setData({...data, commits:data.commits.map(c => c.sha === selected.sha ? {...c,assignee:id} : c)});
-            else { await api("assign", {sha:selected.sha, assignee:id}); await refresh(); }
-            setSelected({...selected,assignee:id});
+            if (data.mode === "demo")
+              setData({
+                ...data,
+                commits: data.commits.map((c) =>
+                  c.sha === selected.sha ? { ...c, assignee: id } : c,
+                ),
+              });
+            else {
+              await api("assign", { sha: selected.sha, assignee: id });
+              await refresh();
+            }
+            setSelected({ ...selected, assignee: id });
           }}
           onReview={review}
           close={() => setSelected(null)}

@@ -36,13 +36,25 @@ export async function POST(req: Request) {
           .refine(
             (ms) =>
               new Set(ms.map((m) => m.id)).size === ms.length &&
-              new Set(ms.filter(m => m.login).map((m) => m.login.toLowerCase())).size === ms.filter(m => m.login).length,
+              new Set(
+                ms.filter((m) => m.login).map((m) => m.login.toLowerCase()),
+              ).size === ms.filter((m) => m.login).length,
             "Every teammate needs a unique identity and GitHub username.",
           ),
       })
       .parse(await req.json());
     if (!input.members.some((m) => m.id === u.id))
       throw new ApiError(400, "Keep yourself in the team.");
+    if (
+      input.defaultReviewerId &&
+      !input.members.some(
+        (m) => m.id === input.defaultReviewerId && m.receivesReviews !== false,
+      )
+    )
+      throw new ApiError(
+        400,
+        "Default reviewer must be a current code reviewer. Choose another reviewer or rotation.",
+      );
     const database = await db();
     await database.collection<Settings & { _id: string }>("settings").updateOne(
       { _id: u.teamId },
@@ -56,7 +68,12 @@ export async function POST(req: Request) {
       { upsert: true },
     );
     const removed = current.members
-      .filter((m) => !input.members.some((n) => n.id === m.id && n.receivesReviews !== false))
+      .filter(
+        (m) =>
+          !input.members.some(
+            (n) => n.id === m.id && n.receivesReviews !== false,
+          ),
+      )
       .map((m) => m.id);
     {
       const col = database.collection<Commit & { _id: string; teamId: string }>(
@@ -65,7 +82,11 @@ export async function POST(req: Request) {
       const pending = await col
         .find({
           teamId: u.teamId,
-          ...(input.defaultReviewerId !== current.defaultReviewerId || input.assignmentMode !== current.assignmentMode || input.allowSelfReview !== current.allowSelfReview ? {} : { assignee: { $in: [...removed, ""] } }),
+          ...(input.defaultReviewerId !== current.defaultReviewerId ||
+          input.assignmentMode !== current.assignmentMode ||
+          input.allowSelfReview !== current.allowSelfReview
+            ? {}
+            : { assignee: { $in: [...removed, ""] } }),
           review: { $exists: false },
         })
         .toArray();

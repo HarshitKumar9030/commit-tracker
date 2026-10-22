@@ -83,27 +83,65 @@ try {
     assert.ok(
       stored.codeHash && !stored.codeHash.includes("qa-test-code-only"),
     );
-    await database
-      .collection("commits")
-      .insertOne({
-        _id: `${teamId}:${settings.repo}:main:${"a".repeat(40)}`,
-        teamId,
-        repo: settings.repo,
-        sha: "a".repeat(40),
-        branch: "main",
-        title: "Review assignment fixture",
-        author: "external-author",
-        date: new Date().toISOString(),
-        body: "",
-        url: "https://github.com",
-        files: [],
-        additions: 0,
-        deletions: 0,
-        assignee: member.id,
-      });
+    await database.collection("commits").insertOne({
+      _id: `${teamId}:${settings.repo}:main:${"a".repeat(40)}`,
+      teamId,
+      repo: settings.repo,
+      sha: "a".repeat(40),
+      branch: "main",
+      title: "Review assignment fixture",
+      author: "external-author",
+      date: new Date().toISOString(),
+      body: "",
+      url: "https://github.com",
+      files: [],
+      additions: 0,
+      deletions: 0,
+      assignee: member.id,
+    });
   } finally {
     await fixtureClient.close();
   }
+
+  assert.equal((await call("ai", { kind: "analytics" })).status, 401);
+  const sha = "a".repeat(40);
+  assert.equal(
+    (await call("assign", { sha, assignee: state.data.userId }, ownerCookie))
+      .status,
+    200,
+  );
+  const routing = {
+    ...settings,
+    assignmentMode: "manual",
+    members: settings.members.map((m) => ({
+      ...m,
+      receivesReviews: m.id === state.data.userId,
+    })),
+  };
+  assert.equal((await call("settings", routing, ownerCookie)).status, 200);
+  assert.equal(
+    (await call("state", undefined, ownerCookie)).data.commits[0].assignee,
+    "",
+  );
+  assert.equal(
+    (await call("assign", { sha, assignee: member.id }, ownerCookie)).status,
+    400,
+  );
+  assert.equal(
+    (await call("assign", { sha, assignee: state.data.userId }, ownerCookie))
+      .status,
+    200,
+  );
+  assert.equal(
+    (
+      await call(
+        "settings",
+        { ...settings, assignmentMode: "automatic" },
+        ownerCookie,
+      )
+    ).status,
+    200,
+  );
 
   assert.equal(
     (
