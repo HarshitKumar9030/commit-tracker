@@ -38,7 +38,9 @@ export default function AIPanel({ data }: { data: Workspace }) {
     setCached(false);
     const kind = tab,
       q = question.trim(),
-      previous = messages.slice(-6);
+      previous = messages
+        .slice(-6)
+        .map((m) => ({ ...m, content: m.content.slice(-4000) }));
     if (kind === "chat") {
       if (!q) {
         setBusy(false);

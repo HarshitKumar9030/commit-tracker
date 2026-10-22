@@ -235,11 +235,6 @@ export default function ReviewDialog({
               maxLength={2000}
             />
           </label>
-          {error && (
-            <p role="alert" className="error">
-              {error}
-            </p>
-          )}
           <div className="dialog-actions">
             <button
               data-tooltip="Record requested changes with feedback for the team."

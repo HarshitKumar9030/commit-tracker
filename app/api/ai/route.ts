@@ -1,3 +1,4 @@
+import { streamingTextResponse } from "@/lib/ai-stream";
 import { streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createHash } from "node:crypto";
@@ -151,33 +152,7 @@ export async function POST(req: Request) {
           );
       },
     });
-    // Read the first chunk before sending headers so provider/auth failures return a useful HTTP error.
-    const reader = result.textStream.getReader(),
-      first = await reader.read(),
-      encoder = new TextEncoder();
-    return new Response(
-      new ReadableStream<Uint8Array>({
-        start(controller) {
-          if (!first.done) controller.enqueue(encoder.encode(first.value));
-          else controller.close();
-        },
-        async pull(controller) {
-          const next = await reader.read();
-          if (next.done) controller.close();
-          else controller.enqueue(encoder.encode(next.value));
-        },
-        cancel() {
-          return reader.cancel();
-        },
-      }),
-      {
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "X-AI-Cache": "miss",
-          "Cache-Control": "no-store",
-        },
-      },
-    );
+    return await streamingTextResponse(result.textStream);
   } catch (e) {
     const status = (e as { statusCode?: number }).statusCode;
     if (status === 403)

@@ -48,6 +48,11 @@ export default function TeamView({
             </div>
             <h2>{m.name}</h2>
             <p>{m.role}</p>
+            <p className="muted">
+              {m.receivesReviews === false
+                ? "No code reviews"
+                : "Code reviewer"}
+            </p>
             <div className="focus-label">CURRENT TASK</div>
             <h3>{m.focus}</h3>
             <div className="team-card-stats">
