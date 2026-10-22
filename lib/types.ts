@@ -6,6 +6,8 @@ export type Member = {
   focus: string;
   color: string;
   receivesReviews?: boolean;
+  kind?: "member" | "canvas";
+  workstream?: "code" | "index" | "presentation";
 };
 export type FileDiff = {
   filename: string;
@@ -35,6 +37,7 @@ export type Commit = {
   review?: Review;
 };
 export type Settings = {
+  workflowVersion?: number;
   teamId?: string;
   name?: string;
   ownerId?: string;
@@ -51,4 +54,5 @@ export type Workspace = {
   settings: Settings;
   userId?: string;
   realtime: boolean;
+  codeIndex?: import("./code-index").CodeIndexRecord[];
 };

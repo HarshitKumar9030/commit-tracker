@@ -1,4 +1,6 @@
 "use client";
+import { hackathonTeam, WORKSTREAMS } from "@/lib/workflow";
+import { isCodeReviewer } from "@/lib/member";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, Plus, Trash2, Users } from "lucide-react";
@@ -137,13 +139,11 @@ export default function SettingsDialog({
                 }
               >
                 <option value="">Rotate between code reviewers</option>
-                {value.members
-                  .filter((m) => m.receivesReviews !== false)
-                  .map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name || "Unnamed member"}
-                    </option>
-                  ))}
+                {value.members.filter(isCodeReviewer).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name || "Unnamed member"}
+                  </option>
+                ))}
               </select>
             </label>
           )}
@@ -163,6 +163,30 @@ export default function SettingsDialog({
             pending assignments. Without self-review, an author's own commits
             stay unassigned if no other reviewer is available.
           </p>
+          <div className="workflow-preset">
+            <strong>Four-person hackathon setup</strong>
+            <p>
+              Harshit + Swarnim code. Syed maintains the code index. Trisha
+              prepares the presentation. The Canvas User is a separate shared
+              tablet profile.
+            </p>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                setValue((v) => ({
+                  ...v,
+                  members: hackathonTeam(v.members, v.ownerId),
+                  workflowVersion: 1,
+                  assignmentMode: "automatic",
+                  defaultReviewerId: "",
+                  allowSelfReview: false,
+                }))
+              }
+            >
+              Apply team setup
+            </button>
+          </div>
           <div className="member-list-heading">
             <h3>
               <Users size={15} />
@@ -198,6 +222,36 @@ export default function SettingsDialog({
               Add member
             </motion.button>
           </div>
+          <button
+            className="secondary add-canvas-profile"
+            type="button"
+            disabled={value.members.length >= 20}
+            onClick={() =>
+              setValue((v) => ({
+                ...v,
+                members: [
+                  ...v.members,
+                  {
+                    id: crypto.randomUUID(),
+                    name: "Tablet canvas",
+                    login: "",
+                    role: "Canvas User",
+                    focus: "Explaining ideas",
+                    color: "blue",
+                    kind: "canvas",
+                    receivesReviews: false,
+                  },
+                ],
+              }))
+            }
+          >
+            Add Canvas User
+          </button>
+          <p className="muted">
+            A Canvas User opens the drawing view on sign-in. All teammates can
+            draw on the same shared canvas. Sign in on your tablet with the team
+            code and select this profile.
+          </p>
           <AnimatePresence initial={false}>
             {value.members.map((m, i) => (
               <motion.div
@@ -228,6 +282,55 @@ export default function SettingsDialog({
                     <Trash2 size={14} />
                   </button>
                 </div>
+                <label className="field">
+                  Profile type
+                  <select
+                    aria-label={`Member ${i + 1} profile type`}
+                    value={m.kind || "member"}
+                    onChange={(e) => {
+                      const kind = e.target.value as "member" | "canvas";
+                      update(m.id, {
+                        kind,
+                        ...(kind === "canvas"
+                          ? { receivesReviews: false, role: "Canvas User" }
+                          : {}),
+                      });
+                      if (value.defaultReviewerId === m.id && kind === "canvas")
+                        setValue((v) => ({ ...v, defaultReviewerId: "" }));
+                    }}
+                  >
+                    <option value="member">Team member</option>
+                    <option value="canvas">Canvas User · tablet drawing</option>
+                  </select>
+                </label>
+                {m.kind !== "canvas" && (
+                  <label className="field">
+                    Responsibility
+                    <select
+                      aria-label={`Member ${i + 1} responsibility`}
+                      value={m.workstream || "code"}
+                      onChange={(e) => {
+                        const workstream = e.target
+                          .value as Member["workstream"];
+                        update(m.id, {
+                          workstream,
+                          receivesReviews: workstream === "code",
+                        });
+                        if (
+                          value.defaultReviewerId === m.id &&
+                          workstream !== "code"
+                        )
+                          setValue((v) => ({ ...v, defaultReviewerId: "" }));
+                      }}
+                    >
+                      {Object.entries(WORKSTREAMS).map(([id, label]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <div className="two-fields">
                   <label className="field">
                     Name
@@ -252,6 +355,7 @@ export default function SettingsDialog({
                 <button
                   type="button"
                   className="text-button"
+                  disabled={m.kind === "canvas"}
                   onClick={() =>
                     setValue((v) => ({
                       ...v,
@@ -269,7 +373,8 @@ export default function SettingsDialog({
                 <label className="check-field">
                   <input
                     type="checkbox"
-                    checked={m.receivesReviews !== false}
+                    checked={isCodeReviewer(m)}
+                    disabled={m.kind === "canvas"}
                     onChange={(e) =>
                       update(m.id, { receivesReviews: e.target.checked })
                     }

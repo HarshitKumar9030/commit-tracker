@@ -1,4 +1,5 @@
 import type { Settings, Commit } from "@/lib/types";
+import { isCodeReviewer } from "@/lib/member";
 import { z } from "zod";
 import { user, settings, db, publish, failure, ApiError } from "@/lib/server";
 import { assignReviewer } from "@/lib/rules";
@@ -13,6 +14,7 @@ export async function POST(req: Request) {
       );
     const input = z
       .object({
+        workflowVersion: z.number().int().min(1).max(10).optional(),
         assignmentMode: z.enum(["automatic", "manual"]).optional(),
         defaultReviewerId: z.string().max(80).optional(),
         allowSelfReview: z.boolean().optional(),
@@ -26,6 +28,8 @@ export async function POST(req: Request) {
               name: z.string().trim().min(1).max(60),
               login: z.string().regex(/^[a-zA-Z0-9-]*$/),
               receivesReviews: z.boolean().optional(),
+              kind: z.enum(["member", "canvas"]).optional(),
+              workstream: z.enum(["code", "index", "presentation"]).optional(),
               role: z.string().max(80),
               focus: z.string().max(100),
               color: z.enum(["purple", "pink", "orange", "blue"]),
@@ -43,12 +47,17 @@ export async function POST(req: Request) {
           ),
       })
       .parse(await req.json());
+    input.members = input.members.map((m) =>
+      m.kind === "canvas" || (m.workstream && m.workstream !== "code")
+        ? { ...m, receivesReviews: false }
+        : m,
+    );
     if (!input.members.some((m) => m.id === u.id))
       throw new ApiError(400, "Keep yourself in the team.");
     if (
       input.defaultReviewerId &&
       !input.members.some(
-        (m) => m.id === input.defaultReviewerId && m.receivesReviews !== false,
+        (m) => m.id === input.defaultReviewerId && isCodeReviewer(m),
       )
     )
       throw new ApiError(
@@ -69,10 +78,7 @@ export async function POST(req: Request) {
     );
     const removed = current.members
       .filter(
-        (m) =>
-          !input.members.some(
-            (n) => n.id === m.id && n.receivesReviews !== false,
-          ),
+        (m) => !input.members.some((n) => n.id === m.id && isCodeReviewer(n)),
       )
       .map((m) => m.id);
     {

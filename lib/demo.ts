@@ -1,5 +1,6 @@
+import { hackathonTeam } from "./workflow";
 import type { Workspace, Member } from "./types";
-export const members: Member[] = [
+const seedMembers: Member[] = [
   {
     id: "harshit",
     name: "Harshit Kumar",
@@ -33,6 +34,7 @@ export const members: Member[] = [
     color: "blue",
   },
 ];
+export const members = hackathonTeam(seedMembers, "harshit");
 export function demoWorkspace(): Workspace {
   const titles = [
     "Add real-time presence to the workspace",
@@ -48,6 +50,7 @@ export function demoWorkspace(): Workspace {
     realtime: false,
     settings: {
       name: "Demo team",
+      workflowVersion: 1,
       teamId: "demo",
       ownerId: "harshit",
       repo: "HarshitKumar9030/commit-tracker",
@@ -63,19 +66,19 @@ export function demoWorkspace(): Workspace {
         i === 0
           ? "Teammates can now see who is online and what everyone is working on. Presence reconnects automatically."
           : "Updated the project implementation and related files.",
-      author: members[i % 4].login,
+      author: members[i % 2].login || members[i % 2].name.toLowerCase(),
       date: new Date(Date.now() - (i * 37 + 4) * 60000).toISOString(),
       branch: "main",
       url: "https://github.com/HarshitKumar9030/commit-tracker",
       additions: [128, 246, 84, 42, 96, 180][i],
       deletions: [24, 18, 32, 6, 12, 0][i],
-      assignee: members[(i + 1) % 4].id,
+      assignee: members[(i + 1) % 2].id,
       ...(i > 2
         ? {
             review: {
               verdict: "approved" as const,
               note: "Approved. No changes requested.",
-              by: members[(i + 1) % 4].id,
+              by: members[(i + 1) % 2].id,
               at: new Date().toISOString(),
             },
           }

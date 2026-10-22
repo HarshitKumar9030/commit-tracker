@@ -5,7 +5,8 @@ import Onboarding from "./onboarding";
 import LiveSignal from "./live-signal";
 import SignalMap from "./signal-map";
 import AnimatedCount from "./animated-count";
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import {
   Link2,
   House,
@@ -27,6 +28,8 @@ import {
   Radio,
   X,
   Plus,
+  PenTool,
+  BookOpen,
 } from "lucide-react";
 import type { Commit, Review, Settings } from "@/lib/types";
 import { Avatar, Empty, Modal } from "./primitives";
@@ -38,11 +41,17 @@ import SettingsDialog from "./settings-dialog";
 import AIPanel from "./ai-panel";
 import Presentation from "./presentation";
 import { api, useWorkspace } from "./use-workspace";
+const CodeIndex = dynamic(() => import("./code-index"));
+const TeamCanvas = dynamic(() => import("./team-canvas"), {
+  loading: () => <p className="muted">Loading canvas…</p>,
+});
 const nav = [
   { name: "Overview", icon: House },
   { name: "Commit feed", icon: List },
   { name: "My reviews", icon: MessageSquare },
   { name: "Team", icon: Users },
+  { name: "Canvas", icon: PenTool },
+  { name: "Code index", icon: BookOpen },
   { name: "Presentation", icon: Monitor },
   { name: "AI analytics & chat", icon: MessageSquare },
 ];
@@ -69,6 +78,15 @@ export default function Workspace() {
     [identity, setIdentity] = useState(false),
     [focus, setFocus] = useState<string | null>(null),
     [teamPortal, setTeamPortal] = useState(false);
+  const currentMember =
+    data?.settings.members.find((m) => m.id === data.userId) ||
+    data?.settings.members[0];
+  useEffect(() => {
+    if (currentMember?.kind === "canvas") setPage("Canvas");
+    else if (currentMember?.workstream === "index") setPage("Code index");
+    else if (currentMember?.workstream === "presentation")
+      setPage("Presentation");
+  }, [currentMember?.id, currentMember?.kind, currentMember?.workstream]);
   const notify = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(""), 4500);
@@ -266,7 +284,13 @@ export default function Workspace() {
             </span>
             <span>
               {data.settings.name || "Hackathon workspace"}
-              <small>{data.settings.members.length} members</small>
+              <small>
+                {
+                  data.settings.members.filter((m) => m.kind !== "canvas")
+                    .length
+                }{" "}
+                teammates + tablet
+              </small>
             </span>
             <ChevronDown size={14} />
           </button>
@@ -325,30 +349,38 @@ export default function Workspace() {
           <div className="page-heading">
             <div>
               <h1>
-                {page === "AI analytics & chat"
-                  ? "Project assistant"
-                  : page === "Commit feed"
-                    ? "Repository activity"
-                    : page === "My reviews"
-                      ? "Review queue"
-                      : page === "Team"
-                        ? "Team members"
-                        : page === "Presentation"
-                          ? "Project recap"
-                          : "Overview"}
+                {page === "Code index"
+                  ? "Code index"
+                  : page === "Canvas"
+                    ? "Shared canvas"
+                    : page === "AI analytics & chat"
+                      ? "Project assistant"
+                      : page === "Commit feed"
+                        ? "Repository activity"
+                        : page === "My reviews"
+                          ? "Review queue"
+                          : page === "Team"
+                            ? "Team members"
+                            : page === "Presentation"
+                              ? "Project recap"
+                              : "Overview"}
               </h1>
               <p>
-                {page === "AI analytics & chat"
-                  ? "Analyze project activity and ask questions about code changes."
-                  : page === "Commit feed"
-                    ? "View commits, inspect code changes, and assign reviews."
-                    : page === "My reviews"
-                      ? "Commits assigned to you for review."
-                      : page === "Team"
-                        ? "View member status, roles, and current tasks."
-                        : page === "Presentation"
-                          ? "Export commit history and review notes for your presentation."
-                          : "Commit totals, pending reviews, and team status."}
+                {page === "Code index"
+                  ? "Track each commit’s functions, components, and code structure."
+                  : page === "Canvas"
+                    ? "Draw on a tablet and explain ideas to your team in real time."
+                    : page === "AI analytics & chat"
+                      ? "Analyze project activity and ask questions about code changes."
+                      : page === "Commit feed"
+                        ? "View commits, inspect code changes, and assign reviews."
+                        : page === "My reviews"
+                          ? "Commits assigned to you for review."
+                          : page === "Team"
+                            ? "View member status, roles, and current tasks."
+                            : page === "Presentation"
+                              ? "Export commit history and review notes for your presentation."
+                              : "Commit totals, pending reviews, and team status."}
               </p>
             </div>
           </div>
@@ -357,7 +389,43 @@ export default function Workspace() {
               {error}
             </p>
           )}
-          {page === "AI analytics & chat" ? (
+          {page === "Code index" ? (
+            <CodeIndex
+              data={data}
+              user={user}
+              onOpenCommit={setSelected}
+              onSave={async (sha, summary, notes) => {
+                if (data.mode === "demo") {
+                  const commit = data.commits.find((c) => c.sha === sha)!;
+                  const { indexCommit } = await import("@/lib/code-index");
+                  setData({
+                    ...data,
+                    codeIndex: [
+                      ...(data.codeIndex || []).filter((r) => r.sha !== sha),
+                      {
+                        sha,
+                        summary,
+                        notes,
+                        indexedBy: user.id,
+                        updatedAt: new Date().toISOString(),
+                        symbols: indexCommit(commit),
+                      },
+                    ],
+                  });
+                } else {
+                  await api("code-index", { sha, summary, notes });
+                  await refresh();
+                }
+              }}
+            />
+          ) : page === "Canvas" ? (
+            <TeamCanvas
+              key={user.id}
+              data={data}
+              user={user}
+              onManage={() => setSettingsOpen(true)}
+            />
+          ) : page === "AI analytics & chat" ? (
             <AIPanel data={data} />
           ) : page === "Presentation" ? (
             <Presentation data={data} />
@@ -390,7 +458,9 @@ export default function Workspace() {
                       icon: "reviewed",
                     },
                     {
-                      value: data.settings.members.length,
+                      value: data.settings.members.filter(
+                        (m) => m.kind !== "canvas",
+                      ).length,
                       label: "Team members",
                       icon: "team",
                     },

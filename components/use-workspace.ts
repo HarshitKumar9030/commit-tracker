@@ -1,7 +1,9 @@
 "use client";
+import { assignReviewer } from "@/lib/assignment";
 import { useCallback, useEffect, useState } from "react";
 import type { Realtime } from "ably";
 import type { Workspace } from "@/lib/types";
+import { hackathonTeam } from "@/lib/workflow";
 import { demoWorkspace } from "@/lib/demo";
 export async function api(path: string, body?: unknown) {
   const r = await fetch(`/api/${path}`, {
@@ -31,6 +33,24 @@ function normalizeDemo(value: Workspace): Workspace {
       }),
     ),
   };
+  if (!value.settings.workflowVersion) {
+    value.settings = {
+      ...value.settings,
+      members: hackathonTeam(value.settings.members, value.settings.ownerId),
+      workflowVersion: 1,
+    };
+    value.commits = value.commits.map((c) => ({
+      ...c,
+      assignee: !c.review
+        ? assignReviewer(
+            c.sha,
+            c.author,
+            value.settings.members,
+            value.settings,
+          )
+        : c.assignee,
+    }));
+  }
   value.commits = value.commits.map((c: Workspace["commits"][number]) => ({
     ...c,
     body:
@@ -57,7 +77,7 @@ function readDemo(): Workspace {
         return normalizeDemo(value);
     }
   } catch {}
-  return demoWorkspace();
+  return normalizeDemo(demoWorkspace());
 }
 export function useWorkspace() {
   const [data, setData] = useState<Workspace | null>(null),

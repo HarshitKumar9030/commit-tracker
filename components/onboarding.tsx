@@ -4,7 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link2, ArrowRight, Plus, LogIn, X } from "lucide-react";
 import { api } from "./use-workspace";
 import SignalMap from "./signal-map";
-type PickMember = { id: string; name: string; color: string };
+type PickMember = {
+  id: string;
+  name: string;
+  color: string;
+  kind?: "member" | "canvas";
+};
 export default function Onboarding({
   onSuccess,
   onCancel,
@@ -186,6 +191,7 @@ export default function Onboarding({
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
+                      {m.kind === "canvas" ? " · Canvas User" : ""}
                     </option>
                   ))}
                 </select>

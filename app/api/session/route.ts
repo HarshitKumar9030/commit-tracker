@@ -31,7 +31,12 @@ export async function POST(req: Request) {
     const s = await settings(teamId);
     if (!id)
       return Response.json({
-        members: s.members.map(({ id, name, color }) => ({ id, name, color })),
+        members: s.members.map(({ id, name, color, kind }) => ({
+          id,
+          name,
+          color,
+          kind,
+        })),
         name: s.name,
       });
     if (!s.members.some((m) => m.id === id))

@@ -1,3 +1,4 @@
+import { isCodeReviewer } from "./member";
 import type { Member, Settings } from "./types";
 export function assignReviewer(
   sha: string,
@@ -11,7 +12,7 @@ export function assignReviewer(
   if (policy?.assignmentMode === "manual") return "";
   const eligible = members.filter(
     (m) =>
-      m.receivesReviews !== false &&
+      isCodeReviewer(m) &&
       (policy?.allowSelfReview ||
         m.login.toLowerCase() !== author.toLowerCase()),
   );

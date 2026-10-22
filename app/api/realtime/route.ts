@@ -1,3 +1,4 @@
+import { canvasCapabilities } from "@/lib/canvas";
 import { Rest } from "ably";
 import { user, failure, ApiError } from "@/lib/server";
 export async function GET() {
@@ -10,9 +11,7 @@ export async function GET() {
     ).auth.createTokenRequest({
       clientId: u.id,
       ttl: 3600000,
-      capability: JSON.stringify({
-        [`relay:${u.teamId}`]: ["subscribe", "presence"],
-      }),
+      capability: JSON.stringify(canvasCapabilities(u.teamId, u.kind)),
     });
     return Response.json(token, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {

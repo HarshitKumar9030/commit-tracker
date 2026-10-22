@@ -62,6 +62,8 @@ try {
   const token = await call("realtime", undefined, joined.cookie);
   assert.deepEqual(Object.keys(JSON.parse(token.data.capability)), [
     `relay:${teamId}`,
+    `relay-canvas:${teamId}`,
+    `relay-canvas-live:${teamId}`,
   ]);
   assert.equal(token.data.clientId, member.id);
   assert.equal((await call("settings", settings, joined.cookie)).status, 403);

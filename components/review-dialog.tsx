@@ -1,4 +1,5 @@
 "use client";
+import { isCodeReviewer } from "@/lib/member";
 import { formatDiff } from "@/lib/diff";
 import { useState } from "react";
 import {
@@ -194,7 +195,7 @@ export default function ReviewDialog({
             {members
               .filter(
                 (m) =>
-                  m.receivesReviews !== false &&
+                  isCodeReviewer(m) &&
                   (allowSelfReview ||
                     m.login.toLowerCase() !== commit.author.toLowerCase()),
               )

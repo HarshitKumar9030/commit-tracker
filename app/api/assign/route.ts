@@ -1,3 +1,4 @@
+import { isCodeReviewer } from "@/lib/member";
 import { z } from "zod";
 import { user, settings, db, publish, failure, ApiError } from "@/lib/server";
 import type { Commit } from "@/lib/types";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     const commit = await col.findOne({ _id: key });
     if (!commit) throw new ApiError(404, "Commit not found.");
     const member = s.members.find(
-      (m) => m.id === input.assignee && m.receivesReviews !== false,
+      (m) => m.id === input.assignee && isCodeReviewer(m),
     );
     if (
       input.assignee &&

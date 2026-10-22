@@ -1,3 +1,4 @@
+import type { CodeIndexRecord } from "@/lib/code-index";
 import type { Commit } from "@/lib/types";
 import { configured, db, settings, user, failure } from "@/lib/server";
 export async function GET() {
@@ -27,9 +28,26 @@ export async function GET() {
       .sort({ date: -1 })
       .limit(100)
       .toArray();
+    const codeIndex = await (
+      await db()
+    )
+      .collection<
+        CodeIndexRecord & { teamId: string; repo: string; branch: string }
+      >("code_index")
+      .find(
+        {
+          teamId: s.teamId,
+          repo: s.repo,
+          branch: s.branch,
+          sha: { $in: commits.map((c) => c.sha) },
+        },
+        { projection: { _id: 0, teamId: 0, repo: 0, branch: 0 } },
+      )
+      .toArray();
     return Response.json(
       {
         mode: "live",
+        codeIndex,
         settings: s,
         commits,
         userId: u.id,

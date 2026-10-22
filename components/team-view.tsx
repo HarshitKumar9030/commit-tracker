@@ -1,3 +1,4 @@
+import { WORKSTREAMS } from "@/lib/workflow";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import type { Workspace } from "@/lib/types";
@@ -48,10 +49,17 @@ export default function TeamView({
             </div>
             <h2>{m.name}</h2>
             <p>{m.role}</p>
+            {m.workstream && (
+              <span className="workstream-label">
+                {WORKSTREAMS[m.workstream]}
+              </span>
+            )}
             <p className="muted">
-              {m.receivesReviews === false
-                ? "No code reviews"
-                : "Code reviewer"}
+              {m.kind === "canvas"
+                ? "Canvas User · live drawing"
+                : m.receivesReviews === false
+                  ? "No code reviews"
+                  : "Code reviewer"}
             </p>
             <div className="focus-label">CURRENT TASK</div>
             <h3>{m.focus}</h3>

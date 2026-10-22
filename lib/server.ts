@@ -63,6 +63,7 @@ export async function settings(explicitTeamId?: string): Promise<Settings> {
   return {
     teamId,
     name: data.name || "Hackathon workspace",
+    workflowVersion: data.workflowVersion,
     ownerId: data.ownerId || data.members[0]?.id,
     repo: data.repo,
     branch: data.branch,
