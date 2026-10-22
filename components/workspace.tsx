@@ -136,25 +136,15 @@ export default function Workspace() {
     }
   }
   async function saveSettings(s: Settings) {
-    if (
-      new Set(s.members.map((m) => m.login.toLowerCase())).size !==
-      s.members.length
-    )
-      throw new Error("Each teammate needs a unique GitHub username.");
     if (data!.mode === "demo")
       setData({
         ...data!,
         settings: s,
         commits: data!.commits.map((c) => {
-          if (!c.review && !s.members.some((m) => m.id === c.assignee)) {
-            const eligible = s.members.filter(
-              (m) => m.login.toLowerCase() !== c.author.toLowerCase(),
-            );
+          if (!c.review) {
             return {
               ...c,
-              assignee: eligible.length
-                ? assignReviewer(c.sha, c.author, s.members)
-                : "",
+              assignee: assignReviewer(c.sha, c.author, s.members, s),
             };
           }
           return c;
@@ -658,6 +648,12 @@ export default function Workspace() {
           commit={selected}
           members={data.settings.members}
           userId={user.id}
+          allowSelfReview={data.settings.allowSelfReview}
+          onAssign={async (id) => {
+            if (data.mode === "demo") setData({...data, commits:data.commits.map(c => c.sha === selected.sha ? {...c,assignee:id} : c)});
+            else { await api("assign", {sha:selected.sha, assignee:id}); await refresh(); }
+            setSelected({...selected,assignee:id});
+          }}
           onReview={review}
           close={() => setSelected(null)}
         />

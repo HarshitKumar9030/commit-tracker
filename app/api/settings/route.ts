@@ -13,6 +13,9 @@ export async function POST(req: Request) {
       );
     const input = z
       .object({
+        assignmentMode: z.enum(["automatic", "manual"]).optional(),
+        defaultReviewerId: z.string().max(80).optional(),
+        allowSelfReview: z.boolean().optional(),
         name: z.string().trim().min(2).max(60),
         repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
         branch: z.string().min(1).max(100),
@@ -21,7 +24,8 @@ export async function POST(req: Request) {
             z.object({
               id: z.string().min(1).max(80),
               name: z.string().trim().min(1).max(60),
-              login: z.string().regex(/^[a-zA-Z0-9-]+$/),
+              login: z.string().regex(/^[a-zA-Z0-9-]*$/),
+              receivesReviews: z.boolean().optional(),
               role: z.string().max(80),
               focus: z.string().max(100),
               color: z.enum(["purple", "pink", "orange", "blue"]),
@@ -32,7 +36,7 @@ export async function POST(req: Request) {
           .refine(
             (ms) =>
               new Set(ms.map((m) => m.id)).size === ms.length &&
-              new Set(ms.map((m) => m.login.toLowerCase())).size === ms.length,
+              new Set(ms.filter(m => m.login).map((m) => m.login.toLowerCase())).size === ms.filter(m => m.login).length,
             "Every teammate needs a unique identity and GitHub username.",
           ),
       })
@@ -52,7 +56,7 @@ export async function POST(req: Request) {
       { upsert: true },
     );
     const removed = current.members
-      .filter((m) => !input.members.some((n) => n.id === m.id))
+      .filter((m) => !input.members.some((n) => n.id === m.id && n.receivesReviews !== false))
       .map((m) => m.id);
     {
       const col = database.collection<Commit & { _id: string; teamId: string }>(
@@ -61,21 +65,16 @@ export async function POST(req: Request) {
       const pending = await col
         .find({
           teamId: u.teamId,
-          assignee: { $in: [...removed, ""] },
+          ...(input.defaultReviewerId !== current.defaultReviewerId || input.assignmentMode !== current.assignmentMode || input.allowSelfReview !== current.allowSelfReview ? {} : { assignee: { $in: [...removed, ""] } }),
           review: { $exists: false },
         })
         .toArray();
       for (const c of pending) {
-        const eligible = input.members.filter(
-          (m) => m.login.toLowerCase() !== c.author.toLowerCase(),
-        );
         await col.updateOne(
           { _id: c._id },
           {
             $set: {
-              assignee: eligible.length
-                ? assignReviewer(c.sha, c.author, input.members)
-                : "",
+              assignee: assignReviewer(c.sha, c.author, input.members, input),
             },
           },
         );

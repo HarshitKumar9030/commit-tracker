@@ -5,6 +5,7 @@ export type Member = {
   role: string;
   focus: string;
   color: string;
+  receivesReviews?: boolean;
 };
 export type FileDiff = {
   filename: string;
@@ -37,6 +38,9 @@ export type Settings = {
   teamId?: string;
   name?: string;
   ownerId?: string;
+  assignmentMode?: "automatic" | "manual";
+  defaultReviewerId?: string;
+  allowSelfReview?: boolean;
   repo: string;
   branch: string;
   members: Member[];

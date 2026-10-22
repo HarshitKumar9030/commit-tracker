@@ -112,6 +112,19 @@ export default function SettingsDialog({
               />
             </label>
           </div>
+          <label className="field">Review assignment
+            <select value={value.assignmentMode || "automatic"} onChange={e => setValue({...value, assignmentMode: e.target.value as "automatic" | "manual"})}>
+              <option value="automatic">Automatic assignment</option><option value="manual">Assign manually</option>
+            </select>
+          </label>
+          {value.assignmentMode !== "manual" && <label className="field">Default code reviewer
+            <select value={value.defaultReviewerId || ""} onChange={e => setValue({...value, defaultReviewerId:e.target.value})}>
+              <option value="">Rotate between code reviewers</option>
+              {value.members.filter(m => m.receivesReviews !== false).map(m => <option key={m.id} value={m.id}>{m.name || "Unnamed member"}</option>)}
+            </select>
+          </label>}
+          <label className="check-field"><input type="checkbox" checked={value.allowSelfReview || false} onChange={e => setValue({...value, allowSelfReview:e.target.checked})}/> Allow authors to review their own commits</label>
+          <p className="muted">Choose one code reviewer below and turn off code reviews for presentation, product, and documentation teammates. Saving updates pending assignments. Without self-review, an author's own commits stay unassigned if no other reviewer is available.</p>
           <div className="member-list-heading">
             <h3>
               <Users size={15} />
@@ -189,9 +202,8 @@ export default function SettingsDialog({
                     />
                   </label>
                   <label className="field">
-                    GitHub username
+                    GitHub username (optional)
                     <input
-                      required
                       pattern="[a-zA-Z0-9-]+"
                       aria-label={`Member ${i + 1} GitHub username`}
                       value={m.login}
@@ -199,6 +211,7 @@ export default function SettingsDialog({
                     />
                   </label>
                 </div>
+                <label className="check-field"><input type="checkbox" checked={m.receivesReviews !== false} onChange={e => update(m.id, {receivesReviews:e.target.checked})}/> Receives code reviews</label>
                 <label className="field role-field">
                   Role
                   <input

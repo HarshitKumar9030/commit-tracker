@@ -67,6 +67,9 @@ export async function settings(explicitTeamId?: string): Promise<Settings> {
     repo: data.repo,
     branch: data.branch,
     members: data.members,
+    assignmentMode: data.assignmentMode,
+    defaultReviewerId: data.defaultReviewerId,
+    allowSelfReview: data.allowSelfReview,
   };
 }
 export function sign(value: string) {
@@ -217,11 +220,7 @@ export async function ingest(
               ...(f.patch ? { patch: f.patch } : {}),
             }),
           ),
-          assignee: s.members.some(
-            (m) => m.login.toLowerCase() !== author.toLowerCase(),
-          )
-            ? assignReviewer(data.sha, author, s.members)
-            : "",
+          assignee: assignReviewer(data.sha, author, s.members, s),
         };
         const r = await col.updateOne(
           { _id: key },
