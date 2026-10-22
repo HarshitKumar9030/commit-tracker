@@ -177,7 +177,7 @@ export default function SettingsDialog({
                 setValue((v) => ({
                   ...v,
                   members: hackathonTeam(v.members, v.ownerId),
-                  workflowVersion: 1,
+                  workflowVersion: 2,
                   assignmentMode: "automatic",
                   defaultReviewerId: "",
                   allowSelfReview: false,
@@ -355,7 +355,10 @@ export default function SettingsDialog({
                 <button
                   type="button"
                   className="text-button"
-                  disabled={m.kind === "canvas"}
+                  disabled={
+                    m.kind === "canvas" ||
+                    (!!m.workstream && m.workstream !== "code")
+                  }
                   onClick={() =>
                     setValue((v) => ({
                       ...v,
@@ -374,7 +377,10 @@ export default function SettingsDialog({
                   <input
                     type="checkbox"
                     checked={isCodeReviewer(m)}
-                    disabled={m.kind === "canvas"}
+                    disabled={
+                      m.kind === "canvas" ||
+                      (!!m.workstream && m.workstream !== "code")
+                    }
                     onChange={(e) =>
                       update(m.id, { receivesReviews: e.target.checked })
                     }

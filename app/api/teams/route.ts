@@ -1,4 +1,5 @@
-import type { Settings } from "@/lib/types";
+import { hackathonTeam } from "@/lib/workflow";
+import type { Settings, Member } from "@/lib/types";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db, failure, issueSession } from "@/lib/server";
@@ -7,6 +8,7 @@ export async function POST(req: Request) {
   try {
     const input = z
       .object({
+        setupHackathon: z.boolean().default(false),
         name: z.string().trim().min(2).max(60),
         repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
         memberName: z.string().trim().min(1).max(60),
@@ -22,6 +24,14 @@ export async function POST(req: Request) {
         .slice(0, 28) || "team"
     }-${randomUUID().slice(0, 8)}`;
     const id = randomUUID();
+    const creator: Member = {
+      id,
+      name: input.memberName,
+      login: input.login,
+      role: "Team lead",
+      focus: "Project setup",
+      color: "purple",
+    };
     await (
       await db()
     )
@@ -34,16 +44,12 @@ export async function POST(req: Request) {
         repo: input.repo,
         branch: "main",
         codeHash: hashCode(input.code),
-        members: [
-          {
-            id,
-            name: input.memberName,
-            login: input.login,
-            role: "Team lead",
-            focus: "Project setup",
-            color: "purple",
-          },
-        ],
+        ...(input.setupHackathon
+          ? { workflowVersion: 2, assignmentMode: "automatic" as const }
+          : {}),
+        members: input.setupHackathon
+          ? hackathonTeam([creator], id)
+          : [creator],
       });
     await issueSession(id, teamId);
     return Response.json({ teamId }, { status: 201 });

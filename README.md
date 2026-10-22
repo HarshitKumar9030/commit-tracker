@@ -97,7 +97,6 @@ GSAP animates the SVG connection paths and nodes. Framer Motion handles navigati
 
 For the local watcher to monitor a newly created group, set `WATCH_TEAM_ID`, `WATCH_MEMBER_ID`, and `WATCH_TEAM_CODE` in `.env.local`. Without these, it uses the existing local `workspace` group. Use the creator's member ID from the authenticated `/api/state` response. Group-specific webhook URLs provide immediate push delivery after deployment.
 
-
 ### Review routing and AI
 
 In Team settings, turn off **Receives code reviews** for teammates working on slides, product, or documentation. Set a default reviewer to route code to one person, or choose manual assignment. Pending commits can be assigned from their diff dialog. Authors are excluded unless **Allow authors to review their own commits** is enabled. Completed reviews keep their recorded reviewer. Available text diffs can be copied or downloaded; GitHub may omit binary or large patches.
@@ -107,3 +106,25 @@ In Team settings, turn off **Receives code reviews** for teammates working on sl
 AI runs only after a button click. Context includes at most 20 commit summaries (14,000 characters total) and six previous messages (6,000 characters total). Optional diff context is capped at four files and 1,800 characters per file. Responses stream as Markdown, with 1,200 output tokens and low thinking effort. Each member gets 20 requests per hour; failed provider attempts also count. Analytics with identical context is reused for 15 minutes. Usage token counts are saved in `ai_usage` for 30 days; MongoDB TTL indexes expire caches and request counters. No complete repository is sent. Demo mode uses labeled local previews without model calls. Review AI output against the original diff.
 
 Run `npm run test:ai` with local MongoDB and a configured AI provider to check authenticated streaming, analytics cache reuse, and recorded token usage. It makes two small model calls and removes only the temporary QA team's data afterward.
+
+### Team workflow and shared canvas
+
+The four-person preset creates these responsibilities, plus a separate shared tablet profile:
+
+| Teammate    | Responsibility                                          |
+| ----------- | ------------------------------------------------------- |
+| Harshit     | Lead developer; code architecture and implementation    |
+| Swarnim     | Developer; feature work and code reviews                |
+| Syed        | Code index; document changes, functions, and components |
+| Trisha      | Presentation; turn project changes into the demo story  |
+| Canvas User | Shared tablet profile; opens the canvas immediately     |
+
+New-team creation offers this preset. Existing teams can apply it from **Team settings → Apply team setup**. Names, responsibilities, members, and GitHub usernames remain editable. Add both coders' GitHub usernames for accurate author matching. Only code teammates receive automatic code reviews. Syed opens the code index on sign-in; Trisha opens the presentation recap.
+
+**Code index** detects function, component, class, and type declarations from the available commit patches, with added/removed/modified labels. This is a lightweight diff index, not a full source-code parser. Syed and the team creator can save change summaries and structure notes in MongoDB. Everyone can read them; saved notes and detected symbols appear in the presentation recap and its Markdown export. Detection makes no AI calls.
+
+**Canvas** is editable by every teammate, including their normal profiles. On the tablet, sign in with the team's code and select **Canvas User**. Use pen, pressure-sensitive stylus input, highlighter, stroke eraser, undo/redo, ink colors, and pen size. Finger drawing starts off to reduce palm marks. Expand the board for more drawing space; export PNG or SVG when needed. Pressure depends on the tablet/browser hardware support; SVG export uses uniform stroke widths while MongoDB and PNG retain pressure rendering.
+
+Live previews use a team-scoped Ably channel and are throttled to roughly eight messages per second per active pointer. Finished strokes are validated and saved independently in `canvas_strokes`; `canvas_boards` tracks the current board. Clients cannot publish durable-save notifications. New boards preserve previous boards, available as read-only history. Offline changes use a per-team, per-profile device queue and retry on reconnect; late strokes stay attached to their original board. Keep the browser open if device backup is unavailable. Each board supports 2,000 strokes of up to 512 sampled points, with up to 100 boards per team.
+
+Run `npm run test:canvas` against local MongoDB to verify two actual Ably clients, all four teammates' drawing access, stroke persistence/idempotence, undo, saved board history, late offline strokes, team isolation, and code-index permissions. It creates and removes only its own QA data.

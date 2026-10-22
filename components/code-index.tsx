@@ -32,6 +32,9 @@ export default function CodeIndex({
     [drafts, setDrafts] = useState<Record<string, Draft>>({}),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState("");
+  const maintainer =
+    data.settings.members.find((m) => m.workstream === "index")?.name ||
+    "The code-index maintainer";
   const records = new Map((data.codeIndex || []).map((r) => [r.sha, r])),
     editable = canMaintainIndex(user, data.settings.ownerId);
   const indexes = useMemo(
@@ -80,8 +83,8 @@ export default function CodeIndex({
           <span className="eyebrow">CODE REFERENCE</span>
           <h2>What changed in the code</h2>
           <p>
-            Syed keeps the commit notes, functions, and components organized
-            here. The whole team can read them.
+            {maintainer} keeps the commit notes, functions, and components
+            organized here. The whole team can read them.
           </p>
         </div>
         <BookOpen size={29} />
@@ -286,7 +289,7 @@ export default function CodeIndex({
                   </button>
                 ) : (
                   <p className="muted">
-                    Syed and the team creator can update these notes.
+                    {maintainer} and the team creator can update these notes.
                   </p>
                 )}
               </div>

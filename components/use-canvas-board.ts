@@ -156,10 +156,11 @@ export function useCanvasBoard(data: Workspace, user: Member) {
           updatedAt: new Date().toISOString(),
         };
         localStorage.setItem(demoKey, JSON.stringify(store));
-        setSnapshot({
-          ...store.boards[operation.epoch],
-          latestEpoch: store.latestEpoch,
-        });
+        if (operation.epoch === (view.current ?? store.latestEpoch))
+          setSnapshot({
+            ...store.boards[operation.epoch],
+            latestEpoch: store.latestEpoch,
+          });
         setError("");
         return true;
       } catch {
@@ -363,6 +364,14 @@ export function useCanvasBoard(data: Workspace, user: Member) {
     mutate,
     selectBoard,
     newBoard,
+    discardPending: () => {
+      if (working.current) return;
+      request.current++;
+      queue.current = [];
+      writeQueue();
+      setError("");
+      void refresh();
+    },
     retry: () => {
       setError("");
       void refresh();

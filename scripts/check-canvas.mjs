@@ -123,10 +123,10 @@ try {
   );
   const tablet = await realtime(cookies[4]),
     viewer = await realtime(cookies[3]);
-  assert.deepEqual(viewer.capabilities[`relay-canvas-live:${teamId}`], [
-    "subscribe",
-    "publish",
-  ]);
+  assert.deepEqual(
+    viewer.capabilities[`relay-canvas-live:${teamId}`].slice().sort(),
+    ["publish", "subscribe"],
+  );
   assert.deepEqual(viewer.capabilities[`relay-canvas:${teamId}`], [
     "subscribe",
   ]);
@@ -273,32 +273,30 @@ try {
   try {
     const database = databaseClient.db(process.env.MONGODB_DB || "relay"),
       sha = "f".repeat(40);
-    await database
-      .collection("commits")
-      .insertOne({
-        _id: `${teamId}:${settings.repo}:main:${sha}`,
-        teamId,
-        repo: settings.repo,
-        sha,
-        title: "Add CanvasPanel",
-        body: "",
-        author: "qa-coder",
-        branch: "main",
-        date: new Date().toISOString(),
-        url: "https://github.com",
-        additions: 1,
-        deletions: 0,
-        assignee: extra[0].id,
-        files: [
-          {
-            filename: "components/canvas.tsx",
-            status: "added",
-            additions: 1,
-            deletions: 0,
-            patch: "+export function CanvasPanel() {}",
-          },
-        ],
-      });
+    await database.collection("commits").insertOne({
+      _id: `${teamId}:${settings.repo}:main:${sha}`,
+      teamId,
+      repo: settings.repo,
+      sha,
+      title: "Add CanvasPanel",
+      body: "",
+      author: "qa-coder",
+      branch: "main",
+      date: new Date().toISOString(),
+      url: "https://github.com",
+      additions: 1,
+      deletions: 0,
+      assignee: extra[0].id,
+      files: [
+        {
+          filename: "components/canvas.tsx",
+          status: "added",
+          additions: 1,
+          deletions: 0,
+          patch: "+export function CanvasPanel() {}",
+        },
+      ],
+    });
     const note = {
       sha,
       summary: "Shared drawing view",

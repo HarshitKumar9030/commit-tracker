@@ -50,7 +50,7 @@ export function demoWorkspace(): Workspace {
     realtime: false,
     settings: {
       name: "Demo team",
-      workflowVersion: 1,
+      workflowVersion: 2,
       teamId: "demo",
       ownerId: "harshit",
       repo: "HarshitKumar9030/commit-tracker",

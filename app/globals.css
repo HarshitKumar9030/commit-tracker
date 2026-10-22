@@ -3356,3 +3356,17 @@ select {
     padding: 15px;
   }
 }
+.canvas-recovery {
+  padding: 14px 16px;
+  background: #fff7eb;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 11px;
+  color: #9b7854;
+}
+.canvas-recovery .secondary {
+  margin-right: 10px;
+}
+.canvas-recovery p {
+  margin: 0 0 8px;
+}

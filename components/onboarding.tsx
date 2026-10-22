@@ -25,9 +25,10 @@ export default function Onboarding({
     [members, setMembers] = useState<PickMember[]>([]),
     [id, setId] = useState(""),
     [name, setName] = useState(""),
-    [memberName, setMemberName] = useState(""),
+    [memberName, setMemberName] = useState("Harshit"),
     [login, setLogin] = useState(""),
     [repo, setRepo] = useState(""),
+    [setupHackathon, setSetupHackathon] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   async function submit(e: React.FormEvent) {
@@ -36,7 +37,14 @@ export default function Onboarding({
     setError("");
     try {
       if (mode === "create") {
-        await api("teams", { name, memberName, login, repo, code });
+        await api("teams", {
+          name,
+          memberName,
+          login,
+          repo,
+          code,
+          setupHackathon,
+        });
         await onSuccess();
       } else if (!members.length) {
         const result = await api("session", { teamId, code });
@@ -140,6 +148,15 @@ export default function Onboarding({
                     />
                   </label>
                 </div>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={setupHackathon}
+                    onChange={(e) => setSetupHackathon(e.target.checked)}
+                  />
+                  Set up Harshit, Swarnim, Syed, Trisha, and a shared Canvas
+                  User
+                </label>
                 <label className="field">
                   Repository
                   <input
@@ -187,11 +204,15 @@ export default function Onboarding({
             {mode === "join" && members.length > 0 && (
               <label className="field">
                 Choose your profile
-                <select value={id} onChange={(e) => setId(e.target.value)}>
+                <select
+                  aria-label="Choose your profile"
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                >
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
-                      {m.kind === "canvas" ? " · Canvas User" : ""}
+                      {m.kind === "canvas" ? " · Tablet" : ""}
                     </option>
                   ))}
                 </select>

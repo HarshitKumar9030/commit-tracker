@@ -62,7 +62,7 @@ export function symbolsForFile(file: FileDiff): CodeSymbol[] {
       ? "added"
       : raw.startsWith("-")
         ? "removed"
-        : raw.startsWith("@@")
+        : raw.startsWith("@@") || raw.startsWith(" ")
           ? "context"
           : null;
     if (!change) continue;
@@ -78,17 +78,15 @@ export function symbolsForFile(file: FileDiff): CodeSymbol[] {
     entry[change] = true;
     found.set(key, entry);
   }
-  return [...found.values()]
-    .slice(0, 100)
-    .map((entry) => ({
-      ...entry.symbol,
-      change:
-        entry.context || (entry.added && entry.removed)
-          ? "modified"
-          : entry.added
-            ? "added"
-            : "removed",
-    }));
+  return [...found.values()].slice(0, 100).map((entry) => ({
+    ...entry.symbol,
+    change:
+      entry.context || (entry.added && entry.removed)
+        ? "modified"
+        : entry.added
+          ? "added"
+          : "removed",
+  }));
 }
 export function indexCommit(commit: Commit): CodeSymbol[] {
   return commit.files.flatMap(symbolsForFile).slice(0, 200);

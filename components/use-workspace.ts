@@ -33,11 +33,14 @@ function normalizeDemo(value: Workspace): Workspace {
       }),
     ),
   };
-  if (!value.settings.workflowVersion) {
+  if ((value.settings.workflowVersion || 0) < 2) {
     value.settings = {
       ...value.settings,
       members: hackathonTeam(value.settings.members, value.settings.ownerId),
-      workflowVersion: 1,
+      workflowVersion: 2,
+      defaultReviewerId: "",
+      assignmentMode: "automatic",
+      allowSelfReview: false,
     };
     value.commits = value.commits.map((c) => ({
       ...c,

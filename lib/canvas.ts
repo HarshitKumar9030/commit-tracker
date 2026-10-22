@@ -63,10 +63,7 @@ export const canvasPreviewSchema = z.discriminatedUnion("kind", [
   }),
   z.object({ kind: z.literal("leave"), epoch: z.number().int().min(0) }),
 ]);
-export function canvasCapabilities(
-  teamId: string,
-  kind?: string,
-): Record<string, string[]> {
+export function canvasCapabilities(teamId: string): Record<string, string[]> {
   return {
     [`relay:${teamId}`]: ["subscribe", "presence"],
     [`relay-canvas:${teamId}`]: ["subscribe"],

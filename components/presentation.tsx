@@ -57,7 +57,7 @@ export default function Presentation({ data }: { data: Workspace }) {
         <h2>Recent changes</h2>
         <p>
           {data.commits.length} commits from a team of{" "}
-          {data.settings.members.length}.
+          {data.settings.members.filter((m) => m.kind !== "canvas").length}.
         </p>
         {data.commits.map((c) => (
           <article className="story-row" key={c.sha}>

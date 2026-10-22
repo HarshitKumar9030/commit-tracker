@@ -40,6 +40,7 @@ type Remote = {
   by: string;
   ink?: CanvasInk;
   point: CanvasPoint;
+  cursorVisible?: boolean;
 };
 const COLOR_NAMES = ["Charcoal", "Purple", "Rose", "Amber", "Green", "Blue"];
 export default function TeamCanvas({
@@ -60,6 +61,7 @@ export default function TeamCanvas({
     cursor = useRef<CanvasPoint | null>(null),
     frame = useRef(0),
     lastSend = useRef(0),
+    activeEpoch = useRef(0),
     erasing = useRef(false),
     erased = useRef(new Set<string>());
   const [tool, setTool] = useState<"pen" | "highlighter" | "eraser">("pen"),
@@ -71,7 +73,8 @@ export default function TeamCanvas({
     [undo, setUndo] = useState<Change[]>([]),
     [redo, setRedo] = useState<Change[]>([]),
     [notice, setNotice] = useState(""),
-    [drawing, setDrawing] = useState(false);
+    [drawing, setDrawing] = useState(false),
+    [confirmDiscard, setConfirmDiscard] = useState(false);
   const latest = useRef(model);
   latest.current = model;
   const paint = useCallback(() => {
@@ -100,6 +103,7 @@ export default function TeamCanvas({
       }
       if (value.ink && !snapshot.strokes.some((s) => s.id === value.ink!.id))
         renderInk(ctx, value.ink);
+      if (value.cursorVisible === false) continue;
       const member = data.settings.members.find((m) => m.id === value.by);
       ctx.save();
       ctx.strokeStyle = value.ink?.color || "#7554e8";
@@ -179,7 +183,11 @@ export default function TeamCanvas({
   useEffect(() => {
     model.onPreview.current = (value, by) => {
       if (value.kind === "leave") {
-        remote.current.delete(by);
+        const previous = remote.current.get(by);
+        if (previous?.ink) {
+          previous.cursorVisible = false;
+          previous.at = Date.now();
+        } else remote.current.delete(by);
         draw();
         return;
       }
@@ -202,8 +210,16 @@ export default function TeamCanvas({
     return () => clearInterval(timer);
   }, [model.onPreview, draw]);
   useEffect(() => {
+    if (active.current && pointer.current !== null) {
+      model.mutate({
+        kind: "stroke",
+        epoch: activeEpoch.current,
+        stroke: { ...active.current, points: [...active.current.points] },
+      });
+    }
     setUndo([]);
     setRedo([]);
+    setDrawing(false);
     active.current = null;
     pointer.current = null;
     cursor.current = null;
@@ -278,6 +294,7 @@ export default function TeamCanvas({
       (event.pointerType === "mouse" && event.button !== 0)
     )
       return;
+    activeEpoch.current = model.snapshot.epoch;
     setDrawing(true);
     event.preventDefault();
     surface.current!.setPointerCapture(event.pointerId);
@@ -317,7 +334,7 @@ export default function TeamCanvas({
         active.current.points = compactPoints(active.current.points);
       }
     }
-    if (performance.now() - lastSend.current > 90) {
+    if (performance.now() - lastSend.current > 120) {
       lastSend.current = performance.now();
       model.sendPreview(
         active.current
@@ -338,14 +355,14 @@ export default function TeamCanvas({
       if (
         !model.mutate({
           kind: "stroke",
-          epoch: model.snapshot.epoch,
+          epoch: activeEpoch.current,
           stroke: { ...ink, points: [...ink.points] },
         })
       )
         return;
       record({
         id: ink.id,
-        epoch: model.snapshot.epoch,
+        epoch: activeEpoch.current,
         before: true,
         after: false,
       });
@@ -447,7 +464,7 @@ export default function TeamCanvas({
             <p>
               {user.kind === "canvas"
                 ? "Canvas User · pen and stylus input"
-                : "Live view · Canvas Users can draw"}
+                : "Shared canvas · everyone can draw"}
             </p>
           </div>
         </div>
@@ -616,6 +633,42 @@ export default function TeamCanvas({
           </button>
         </div>
       )}
+      {model.error && model.pending > 0 && !model.saving && (
+        <div className="canvas-recovery">
+          <p>
+            Export the board below to keep a copy before discarding device-only
+            changes.
+          </p>
+          {confirmDiscard ? (
+            <>
+              <button
+                className="secondary"
+                onClick={() => {
+                  model.discardPending();
+                  setUndo([]);
+                  setRedo([]);
+                  setConfirmDiscard(false);
+                }}
+              >
+                Discard {model.pending} unsaved changes
+              </button>
+              <button
+                className="text-button"
+                onClick={() => setConfirmDiscard(false)}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              className="text-button"
+              onClick={() => setConfirmDiscard(true)}
+            >
+              Discard unsaved changes…
+            </button>
+          )}
+        </div>
+      )}
       <div className={`canvas-stage ${model.canEdit ? "editable" : ""}`}>
         <canvas
           ref={surface}
@@ -700,9 +753,7 @@ export default function TeamCanvas({
         {data.mode === "demo"
           ? "Demo boards are stored in this browser. Live teams save drawings to MongoDB."
           : "Completed strokes save to MongoDB. Unsent changes are backed up on this device and retry when connected."}
-        {user.kind === "canvas"
-          ? " Finger drawing is off by default to reduce accidental palm marks."
-          : ""}
+        {" Finger drawing is off by default to reduce accidental palm marks."}
       </p>
       {notice && (
         <p className="muted" role="status">

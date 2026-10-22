@@ -11,7 +11,7 @@ export async function GET() {
     ).auth.createTokenRequest({
       clientId: u.id,
       ttl: 3600000,
-      capability: JSON.stringify(canvasCapabilities(u.teamId, u.kind)),
+      capability: JSON.stringify(canvasCapabilities(u.teamId)),
     });
     return Response.json(token, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {

@@ -12,11 +12,20 @@ type StoredStroke = CanvasStroke & {
   teamId: string;
   epoch: number;
 };
+const realtime = process.env.ABLY_API_KEY
+  ? new Rest(process.env.ABLY_API_KEY)
+  : null;
+let indexReady: Promise<string> | undefined;
 async function collections(teamId: string) {
   const database = await db(),
     boards = database.collection<Board>("canvas_boards"),
     strokes = database.collection<StoredStroke>("canvas_strokes");
-  await strokes.createIndex({ teamId: 1, epoch: 1 });
+  if (!indexReady)
+    indexReady = strokes.createIndex({ teamId: 1, epoch: 1 }).catch((error) => {
+      indexReady = undefined;
+      throw error;
+    });
+  await indexReady;
   try {
     await boards.updateOne(
       { _id: teamId },
@@ -29,9 +38,9 @@ async function collections(teamId: string) {
   return { boards, strokes };
 }
 async function broadcast(teamId: string, epoch: number) {
-  if (!process.env.ABLY_API_KEY) return;
+  if (!realtime) return;
   try {
-    await new Rest(process.env.ABLY_API_KEY).channels
+    await realtime.channels
       .get(`relay-canvas:${teamId}`)
       .publish("changed", { epoch });
   } catch {
