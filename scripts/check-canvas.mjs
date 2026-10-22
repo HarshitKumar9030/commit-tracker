@@ -25,13 +25,14 @@ async function call(path, body, cookie) {
     cookie: r.headers.get("set-cookie")?.split(";")[0],
   };
 }
-async function create() {
+async function create(setupHackathon = false) {
   const result = await call("teams", {
     name: "Canvas QA",
     repo: "HarshitKumar9030/commit-tracker",
     memberName: "Harshit",
     login: "qa-coder",
     code: "temporary-canvas-qa-code",
+    setupHackathon,
   });
   assert.equal(result.status, 201, JSON.stringify(result.data));
   teams.push(result.data.teamId);
@@ -263,7 +264,16 @@ try {
     (await call("canvas?epoch=0", undefined, owner)).data.strokes.length,
     6,
   );
-  const separate = await create();
+  const separate = await create(true);
+  const bootstrapped = await call("state", undefined, separate.cookie);
+  assert.deepEqual(
+    bootstrapped.data.settings.members.map((m) => m.name),
+    ["Harshit", "Swarnim", "Syed", "Trisha", "Canvas User"],
+  );
+  assert.equal(
+    bootstrapped.data.settings.members.filter((m) => m.receivesReviews).length,
+    2,
+  );
   assert.equal(
     (await call("canvas", undefined, separate.cookie)).data.strokes.length,
     0,
@@ -323,6 +333,7 @@ try {
   }
   console.log(
     JSON.stringify({
+      namedWorkflowBootstrap: true,
       livePreviewAcrossClients: true,
       durableBroadcast: true,
       allFourCanDraw: true,

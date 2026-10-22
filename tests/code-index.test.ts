@@ -60,3 +60,12 @@ test("four-person setup preserves owner identity and adds separate shared tablet
   assert.equal(canMaintainIndex(members[3], "owner"), false);
   assert.equal(canMaintainIndex(members[0], "owner"), true);
 });
+
+test("body edits retain the enclosing visible function as modified", () => {
+  const symbols = symbolsForFile({
+    ...file,
+    patch: "@@ -1,3 +1,4 @@\n export function connect() {\n+  retry();\n }",
+  });
+  assert.equal(symbols[0].name, "connect");
+  assert.equal(symbols[0].change, "modified");
+});
