@@ -37,7 +37,7 @@ import DemoTour from "./demo-tour";
 import TeamView from "./team-view";
 import CommitRow from "./commit-row";
 import ReviewDialog from "./review-dialog";
-import SettingsDialog from "./settings-dialog";
+const TeamManagement = dynamic(() => import("./team-management"));
 import AIPanel from "./ai-panel";
 import Presentation from "./presentation";
 import { api, useWorkspace } from "./use-workspace";
@@ -71,7 +71,6 @@ export default function Workspace() {
     [filter, setFilter] = useState("All commits"),
     [search, setSearch] = useState(""),
     [selected, setSelected] = useState<Commit | null>(null),
-    [settingsOpen, setSettingsOpen] = useState(false),
     [syncing, setSyncing] = useState(false),
     [toast, setToast] = useState(""),
     [menu, setMenu] = useState(false),
@@ -270,7 +269,7 @@ export default function Workspace() {
           <button
             className="nav-item"
             data-tooltip="Change the repository, add or remove members, and copy your team invite."
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => navigate("Team management")}
           >
             <SettingsIcon size={18} />
             Team settings
@@ -349,38 +348,42 @@ export default function Workspace() {
           <div className="page-heading">
             <div>
               <h1>
-                {page === "Code index"
-                  ? "Code index"
-                  : page === "Canvas"
-                    ? "Shared canvas"
-                    : page === "AI analytics & chat"
-                      ? "Project assistant"
-                      : page === "Commit feed"
-                        ? "Repository activity"
-                        : page === "My reviews"
-                          ? "Review queue"
-                          : page === "Team"
-                            ? "Team members"
-                            : page === "Presentation"
-                              ? "Project recap"
-                              : "Overview"}
+                {page === "Team management"
+                  ? "Team management"
+                  : page === "Code index"
+                    ? "Code index"
+                    : page === "Canvas"
+                      ? "Shared canvas"
+                      : page === "AI analytics & chat"
+                        ? "Project assistant"
+                        : page === "Commit feed"
+                          ? "Repository activity"
+                          : page === "My reviews"
+                            ? "Review queue"
+                            : page === "Team"
+                              ? "Team members"
+                              : page === "Presentation"
+                                ? "Project recap"
+                                : "Overview"}
               </h1>
               <p>
-                {page === "Code index"
-                  ? "Track each commit’s functions, components, and code structure."
-                  : page === "Canvas"
-                    ? "Draw on a tablet and explain ideas to your team in real time."
-                    : page === "AI analytics & chat"
-                      ? "Analyze project activity and ask questions about code changes."
-                      : page === "Commit feed"
-                        ? "View commits, inspect code changes, and assign reviews."
-                        : page === "My reviews"
-                          ? "Commits assigned to you for review."
-                          : page === "Team"
-                            ? "View member status, roles, and current tasks."
-                            : page === "Presentation"
-                              ? "Export commit history and review notes for your presentation."
-                              : "Commit totals, pending reviews, and team status."}
+                {page === "Team management"
+                  ? "Manage members, review assignments, and repository settings."
+                  : page === "Code index"
+                    ? "Track each commit’s functions, components, and code structure."
+                    : page === "Canvas"
+                      ? "Draw on a tablet and explain ideas to your team in real time."
+                      : page === "AI analytics & chat"
+                        ? "Analyze project activity and ask questions about code changes."
+                        : page === "Commit feed"
+                          ? "View commits, inspect code changes, and assign reviews."
+                          : page === "My reviews"
+                            ? "Commits assigned to you for review."
+                            : page === "Team"
+                              ? "View member status, roles, and current tasks."
+                              : page === "Presentation"
+                                ? "Export commit history and review notes for your presentation."
+                                : "Commit totals, pending reviews, and team status."}
               </p>
             </div>
           </div>
@@ -389,11 +392,25 @@ export default function Workspace() {
               {error}
             </p>
           )}
-          {page === "Code index" ? (
+          {page === "Team management" ? (
+            <TeamManagement
+              settings={data.settings}
+              userId={user.id}
+              demo={data.mode === "demo"}
+              save={saveSettings}
+              close={() => navigate("Team")}
+            />
+          ) : page === "Code index" ? (
             <CodeIndex
               data={data}
               user={user}
               onOpenCommit={setSelected}
+              onDemoProfile={() => {
+                const member = data.settings.members.find(
+                  (m) => m.workstream === "index",
+                );
+                if (member) setData({ ...data, userId: member.id });
+              }}
               onSave={async (sha, summary, notes) => {
                 if (data.mode === "demo") {
                   const commit = data.commits.find((c) => c.sha === sha)!;
@@ -423,19 +440,23 @@ export default function Workspace() {
               key={user.id}
               data={data}
               user={user}
-              onManage={() => setSettingsOpen(true)}
+              onManage={() => navigate("Team management")}
             />
           ) : page === "AI analytics & chat" ? (
             <AIPanel data={data} />
           ) : page === "Presentation" ? (
-            <Presentation data={data} />
+            <Presentation
+              data={data}
+              navigate={navigate}
+              onOpenCommit={setSelected}
+            />
           ) : page === "Team" ? (
             <TeamView
               data={data}
               online={online}
               userId={user.id}
               onFocus={setFocus}
-              onManage={() => setSettingsOpen(true)}
+              onManage={() => navigate("Team management")}
             />
           ) : (
             <div className="dashboard-grid">
@@ -743,15 +764,6 @@ export default function Workspace() {
           }}
           onReview={review}
           close={() => setSelected(null)}
-        />
-      )}
-      {settingsOpen && (
-        <SettingsDialog
-          settings={data.settings}
-          userId={user.id}
-          demo={data.mode === "demo"}
-          save={saveSettings}
-          close={() => setSettingsOpen(false)}
         />
       )}
       {identity && (

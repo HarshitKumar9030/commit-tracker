@@ -20,13 +20,17 @@ export default function CodeIndex({
   user,
   onSave,
   onOpenCommit,
+  onDemoProfile,
 }: {
   data: Workspace;
   user: Member;
   onSave: (sha: string, summary: string, notes: string) => Promise<void>;
   onOpenCommit: (commit: Commit) => void;
+  onDemoProfile: () => void;
 }) {
-  const [selected, setSelected] = useState(""),
+  const [selected, setSelected] = useState(
+      data.mode === "demo" ? data.codeIndex?.[0]?.sha || "" : "",
+    ),
     [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all"),
     [drafts, setDrafts] = useState<Record<string, Draft>>({}),
@@ -89,6 +93,40 @@ export default function CodeIndex({
         </div>
         <BookOpen size={29} />
       </div>
+      {data.mode === "demo" && (
+        <div className="demo-workflow-guide">
+          <div>
+            <strong>Try the code-index workflow</strong>
+            <p>
+              These sample diffs contain different functions and components.
+              Read a documented example, then select “Needs documentation” to
+              add notes for the presence change. Saved notes appear in
+              Presentation. Sample diffs are illustrative.
+            </p>
+          </div>
+          <div className="action-row">
+            <button
+              className="secondary"
+              onClick={() => {
+                setFilter("documented");
+                setSelected("");
+              }}
+            >
+              Read an example
+            </button>
+            <button
+              className="primary"
+              onClick={() => {
+                onDemoProfile();
+                setFilter("pending");
+                setSelected("");
+              }}
+            >
+              Try as {maintainer}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="index-stats">
         <div>
           <strong>{data.commits.length}</strong>
@@ -179,17 +217,23 @@ export default function CodeIndex({
               </button>
             </div>
             <div className="index-files">
-              {commit.files.map((f) => (
-                <a
-                  key={f.filename}
-                  href={`https://github.com/${data.settings.repo}/blob/${commit.sha}/${f.filename.split("/").map(encodeURIComponent).join("/")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {f.filename}
-                  <ArrowUpRight size={12} />
-                </a>
-              ))}
+              {commit.files.map((f) =>
+                data.mode === "demo" ? (
+                  <span key={f.filename} className="sample-file">
+                    {f.filename}
+                  </span>
+                ) : (
+                  <a
+                    key={f.filename}
+                    href={`https://github.com/${data.settings.repo}/blob/${commit.sha}/${f.filename.split("/").map(encodeURIComponent).join("/")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {f.filename}
+                    <ArrowUpRight size={12} />
+                  </a>
+                ),
+              )}
             </div>
             <h4>Functions & components</h4>
             <p className="index-detection-note">

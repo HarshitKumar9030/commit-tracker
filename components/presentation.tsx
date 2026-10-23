@@ -1,17 +1,26 @@
 "use client";
 import { useState } from "react";
 import { ArrowUpRight, Copy, Check, Download, FileText } from "lucide-react";
-import type { Workspace } from "@/lib/types";
-export default function Presentation({ data }: { data: Workspace }) {
+import { presentationMarkdown, presentationOutline } from "@/lib/presentation";
+import type { Workspace, Commit } from "@/lib/types";
+export default function Presentation({
+  data,
+  navigate,
+  onOpenCommit,
+}: {
+  data: Workspace;
+  navigate: (page: string) => void;
+  onOpenCommit: (commit: Commit) => void;
+}) {
+  const [rehearsal, setRehearsal] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const outline = presentationOutline(data);
   const [copied, setCopied] = useState(false);
   const approved = data.commits.filter((c) => c.review?.verdict === "approved");
   const indexed = (data.codeIndex || []).filter((r) =>
     data.commits.some((c) => c.sha === r.sha),
   );
-  const text = `# ${data.settings.repo.split("/")[1]}\n\n## What we built\n${data.commits.map((c) => `- ${c.title} (${c.author})`).join("\n")}\n\n## Code index\n${indexed.map((r) => `### ${r.sha.slice(0, 7)} ${r.summary}\n${r.notes}\n${r.symbols.map((s) => `- ${s.change}: ${s.kind} ${s.name} (${s.file})`).join("\n")}`).join("\n\n") || "Code index notes are still in progress."}\n\n## Reviewed & ready\n${approved.map((c) => `- ${c.title}: ${c.review!.note}`).join("\n") || "Reviews are still in progress."}\n\n## The team\n${data.settings.members
-    .filter((m) => m.kind !== "canvas")
-    .map((m) => `- ${m.name} (${m.role}): ${m.focus}`)
-    .join("\n")}`;
+  const text = presentationMarkdown(data);
 
   return (
     <section className="presentation">
@@ -26,8 +35,12 @@ export default function Presentation({ data }: { data: Workspace }) {
             data-tooltip="Copy commit descriptions, approved review notes, and team tasks to your clipboard."
             className="secondary"
             onClick={async () => {
-              await navigator.clipboard.writeText(text);
-              setCopied(true);
+              try {
+                await navigator.clipboard.writeText(text);
+                setCopied(true);
+              } catch {
+                setError("Clipboard unavailable. Export the recap instead.");
+              }
             }}
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}{" "}
@@ -52,6 +65,82 @@ export default function Presentation({ data }: { data: Workspace }) {
           </button>
         </div>
       </div>
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+      <div className="demo-workflow-guide">
+        <div>
+          <strong>
+            {data.mode === "demo"
+              ? "Trisha’s sample presentation"
+              : "Presentation walkthrough"}
+          </strong>
+          <p>
+            {data.mode === "demo"
+              ? "Saved code-index examples feed this recap. The sample diffs illustrate the workflow; they are not the connected repository’s history. Rehearse the outline, inspect the evidence, or export the full notes."
+              : "Use the outline as a starting point. Check the code-index notes and review decisions before presenting."}
+          </p>
+        </div>
+        <button
+          className="secondary"
+          onClick={() => setRehearsal(rehearsal === null ? 0 : null)}
+        >
+          {rehearsal === null ? "Rehearse walkthrough" : "Close rehearsal"}
+        </button>
+      </div>
+      {rehearsal !== null ? (
+        <section
+          className="rehearsal-stage"
+          aria-label="Presentation rehearsal"
+        >
+          <span className="eyebrow">
+            PART {rehearsal + 1} OF {outline.length} · {outline[rehearsal].time}
+          </span>
+          <h2>{outline[rehearsal].title}</h2>
+          <p>{outline[rehearsal].notes}</p>
+          <small>{outline[rehearsal].evidence}</small>
+          <div className="action-row">
+            <button
+              className="secondary"
+              disabled={rehearsal === 0}
+              onClick={() => setRehearsal(rehearsal - 1)}
+            >
+              Previous
+            </button>
+            <button
+              className="primary"
+              onClick={() =>
+                rehearsal < outline.length - 1
+                  ? setRehearsal(rehearsal + 1)
+                  : setRehearsal(null)
+              }
+            >
+              {rehearsal === outline.length - 1
+                ? "Finish rehearsal"
+                : "Next part"}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <div className="pitch-outline">
+          {outline.map((beat) => (
+            <article className="pitch-step" key={beat.title}>
+              <span>{beat.time}</span>
+              <h3>{beat.title}</h3>
+              <p>{beat.notes}</p>
+              <small>{beat.evidence}</small>
+              <button
+                className="text-button"
+                onClick={() => navigate(beat.page)}
+              >
+                Open {beat.page.toLowerCase()} <ArrowUpRight size={13} />
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
       <div className="story-section">
         <span className="section-number">COMMITS</span>
         <h2>Recent changes</h2>
@@ -66,14 +155,24 @@ export default function Presentation({ data }: { data: Workspace }) {
               <h3>{c.title}</h3>
               <p>{c.body || `Built by ${c.author}`}</p>
             </div>
-            <a
-              aria-label={`Open ${c.title} on GitHub`}
-              href={c.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <ArrowUpRight size={19} />
-            </a>
+            {data.mode === "demo" ? (
+              <button
+                className="icon-button"
+                aria-label={`Open sample diff for ${c.title}`}
+                onClick={() => onOpenCommit(c)}
+              >
+                <ArrowUpRight size={19} />
+              </button>
+            ) : (
+              <a
+                aria-label={`Open ${c.title} on GitHub`}
+                href={c.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ArrowUpRight size={19} />
+              </a>
+            )}
           </article>
         ))}
       </div>
@@ -81,7 +180,8 @@ export default function Presentation({ data }: { data: Workspace }) {
         <span className="section-number">CODE INDEX</span>
         <h2>Documented changes</h2>
         <p>
-          Syed’s notes explain how the code works and what each change adds.
+          Saved maintainer notes explain how the code works and what each change
+          adds.
         </p>
         {indexed.length ? (
           indexed.map((record) => (

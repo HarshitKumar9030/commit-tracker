@@ -49,6 +49,7 @@ export type Settings = {
   members: Member[];
 };
 export type Workspace = {
+  demoContentVersion?: number;
   mode: "demo" | "live";
   commits: Commit[];
   settings: Settings;

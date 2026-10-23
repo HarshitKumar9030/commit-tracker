@@ -31,16 +31,22 @@ const steps = [
     text: "In a live workspace, a green dot means the member is connected over WebSockets. Demo profiles are offline examples. Click your own profile to update your task.",
   },
   {
-    page: "Team",
-    target: ".team-tools",
+    page: "Team management",
+    target: ".management-tabs",
     title: "Manage team members",
-    text: "Open Manage members to add names, GitHub usernames, and roles. A live team creator can add or remove members and copy an invite link.",
+    text: "Use the full team management page to edit members, choose review routing, and copy repository invites. Each section has its own tab.",
+  },
+  {
+    page: "Code index",
+    target: ".index-layout",
+    title: "Read the code reference",
+    text: "Five sample changes have maintainer notes explaining functions, components, and their purpose. Try as Syed to document the remaining change. Saved notes feed the presentation.",
   },
   {
     page: "Presentation",
     target: ".presentation-top",
     title: "Export a project recap",
-    text: "Copy or export commit descriptions and approved review notes as Markdown. Use the result as a starting point for your presentation.",
+    text: "Rehearse a three-minute walkthrough with source evidence, then copy or export the commit descriptions, code-index notes, and approved reviews as Markdown.",
   },
 ];
 type Rect = { x: number; y: number; width: number; height: number };

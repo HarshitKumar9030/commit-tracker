@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Realtime } from "ably";
 import type { Workspace } from "@/lib/types";
 import { hackathonTeam } from "@/lib/workflow";
-import { demoWorkspace } from "@/lib/demo";
+import { demoWorkspace, upgradeDemoContent } from "@/lib/demo";
 export async function api(path: string, body?: unknown) {
   const r = await fetch(`/api/${path}`, {
     method: body === undefined ? "GET" : "POST",
@@ -64,7 +64,7 @@ function normalizeDemo(value: Workspace): Workspace {
       ? { review: { ...c.review, note: "Approved. No changes requested." } }
       : {}),
   }));
-  return value;
+  return upgradeDemoContent(value);
 }
 function readDemo(): Workspace {
   try {
