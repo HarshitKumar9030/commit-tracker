@@ -1,4 +1,5 @@
 "use client";
+import MarkdownNotes from "./markdown-notes";
 import { useState } from "react";
 import { ArrowUpRight, Copy, Check, Download, FileText } from "lucide-react";
 import { presentationMarkdown, presentationOutline } from "@/lib/presentation";
@@ -189,7 +190,7 @@ export default function Presentation({
               <span className="story-dot" />
               <div>
                 <h3>{record.summary}</h3>
-                <p style={{ whiteSpace: "pre-wrap" }}>{record.notes}</p>
+                <MarkdownNotes text={record.notes} />
                 <small>
                   {record.sha.slice(0, 7)} · {record.symbols.length} detected
                   symbol changes

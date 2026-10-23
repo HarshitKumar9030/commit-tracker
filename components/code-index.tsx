@@ -1,4 +1,5 @@
 "use client";
+import MarkdownNotes from "./markdown-notes";
 import { useMemo, useState } from "react";
 import {
   BookOpen,
@@ -28,6 +29,7 @@ export default function CodeIndex({
   onOpenCommit: (commit: Commit) => void;
   onDemoProfile: () => void;
 }) {
+  const [notesView, setNotesView] = useState<"write" | "preview" | null>(null);
   const [selected, setSelected] = useState(
       data.mode === "demo" ? data.codeIndex?.[0]?.sha || "" : "",
     ),
@@ -173,6 +175,7 @@ export default function CodeIndex({
               className={c.sha === commit?.sha ? "selected" : ""}
               onClick={() => {
                 setSelected(c.sha);
+                setNotesView(null);
                 setStatus("");
               }}
             >
@@ -293,18 +296,69 @@ export default function CodeIndex({
                   onChange={(e) => change({ summary: e.target.value })}
                 />
               </label>
-              <label className="field">
-                Code structure & behavior notes
+              <div className="notes-editor">
+                <div className="notes-editor-top">
+                  <span id="code-notes-label">
+                    Code structure & behavior notes
+                  </span>
+                  {editable && (
+                    <div
+                      className="notes-view-controls"
+                      role="group"
+                      aria-label="Notes view"
+                    >
+                      {(["write", "preview"] as const).map((view) => (
+                        <button
+                          type="button"
+                          key={view}
+                          aria-pressed={
+                            (notesView || (record ? "preview" : "write")) ===
+                            view
+                          }
+                          onClick={() => setNotesView(view)}
+                        >
+                          {view === "write" ? "Write" : "Preview"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <textarea
                   aria-label="Code structure notes"
+                  aria-describedby="code-notes-help"
                   required
                   readOnly={!editable}
+                  hidden={
+                    !editable ||
+                    (notesView || (record ? "preview" : "write")) === "preview"
+                  }
                   maxLength={4000}
                   value={draft.notes}
                   onChange={(e) => change({ notes: e.target.value })}
-                  placeholder="Explain what changed, what the new functions do, where components fit, and what the team should know."
+                  placeholder="## What changed\nExplain functions, components, and behavior. Use **bold**, lists, and fenced code blocks."
                 />
-              </label>
+                {(!editable ||
+                  (notesView || (record ? "preview" : "write")) ===
+                    "preview") && (
+                  <div
+                    className="notes-preview"
+                    role="region"
+                    aria-labelledby="code-notes-label"
+                  >
+                    {draft.notes.trim() ? (
+                      <MarkdownNotes text={draft.notes} />
+                    ) : (
+                      <p className="muted">
+                        Write some notes to preview them here.
+                      </p>
+                    )}
+                  </div>
+                )}
+                <p id="code-notes-help" className="notes-help">
+                  Markdown supported: headings, lists, links, tables, and fenced
+                  code blocks. Preview shows your unsaved edits.
+                </p>
+              </div>
               {record && (
                 <p className="muted">
                   Documented by{" "}
@@ -323,7 +377,12 @@ export default function CodeIndex({
                   Copy record
                 </button>
                 {editable ? (
-                  <button className="primary" disabled={busy}>
+                  <button
+                    className="primary"
+                    disabled={
+                      busy || !draft.notes.trim() || !draft.summary.trim()
+                    }
+                  >
                     <Check size={15} />
                     {busy
                       ? "Saving…"
