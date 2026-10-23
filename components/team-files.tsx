@@ -230,6 +230,7 @@ export default function TeamFiles({
             <label className="field">
               Category
               <select
+                aria-label="Shared file category"
                 value={form.category}
                 onChange={(e) =>
                   setForm({

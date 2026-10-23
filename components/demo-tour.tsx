@@ -43,6 +43,12 @@ const steps = [
     text: "Five sample changes have maintainer notes explaining functions, components, and their purpose. Try as Syed to document the remaining change. Saved notes feed the presentation.",
   },
   {
+    page: "Files",
+    target: ".files-hero",
+    title: "Share files with the team",
+    text: "Paste Google Drive file or folder links here. Add notes and a category, then preview or open the file. A shared Drive folder gives the team a place to upload files; Drive still controls access.",
+  },
+  {
     page: "Presentation",
     target: ".presentation-top",
     title: "Export a project recap",

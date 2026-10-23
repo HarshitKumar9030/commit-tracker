@@ -12,10 +12,11 @@ export async function POST(req: Request) {
     const u = await user(),
       s = await settings(u.teamId),
       database = await db();
-    const raw = await req.json();
-    const action = z
-      .enum(["add", "update", "archive", "restore"])
-      .parse(raw.action);
+    const raw = z
+      .object({ action: z.enum(["add", "update", "archive", "restore"]) })
+      .passthrough()
+      .parse(await req.json());
+    const action = raw.action;
     const col = database.collection<StoredFile>("team_files");
     if (action === "add") {
       const input = teamFileInput.parse(raw);
