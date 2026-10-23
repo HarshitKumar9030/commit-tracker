@@ -6,6 +6,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, Plus, Trash2, Users } from "lucide-react";
 import type { Settings, Member } from "@/lib/types";
 import { Avatar } from "./primitives";
+function fingerprint(value: Settings) {
+  return JSON.stringify(value, (_key, item) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.entries(item).sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : item,
+  );
+}
 export default function TeamManagement({
   settings,
   demo,
@@ -56,8 +65,8 @@ export default function TeamManagement({
     setSelectedMember(id);
   }
   const dirty =
-    JSON.stringify(value) !==
-    JSON.stringify({
+    fingerprint(value) !==
+    fingerprint({
       ...settings,
       name: settings.name || "Hackathon workspace",
     });
@@ -81,15 +90,8 @@ export default function TeamManagement({
   }
   return (
     <section className="team-management">
-      <div className="management-hero">
-        <div>
-          <span className="eyebrow">WORKSPACE SETUP</span>
-          <h2>Team members and responsibilities</h2>
-          <p>
-            Set responsibilities, choose reviewers, and keep everyone working
-            from the same repository.
-          </p>
-        </div>
+      <div className="management-heading">
+        <span className="eyebrow">WORKSPACE SETUP</span>
         <button type="button" className="secondary" onClick={close}>
           View team
         </button>
@@ -157,14 +159,25 @@ export default function TeamManagement({
         </p>
       )}
       <form
-        onInvalidCapture={(e) => {
-          const panel = (e.target as HTMLElement).closest<HTMLElement>(
-            '[role="tabpanel"]',
-          );
-          if (panel) setTab(panel.id.replace("management-panel-", ""));
-        }}
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
+          const invalid = e.currentTarget.querySelector<
+            HTMLInputElement | HTMLSelectElement
+          >("input:invalid, select:invalid, textarea:invalid");
+          if (invalid) {
+            const panel = invalid.closest<HTMLElement>('[role="tabpanel"]');
+            const member = invalid.closest<HTMLElement>("[data-member-id]");
+            if (panel) setTab(panel.id.replace("management-panel-", ""));
+            if (member?.dataset.memberId)
+              setSelectedMember(member.dataset.memberId);
+            setError("Complete the highlighted field before saving.");
+            requestAnimationFrame(() => {
+              invalid.focus();
+              invalid.reportValidity();
+            });
+            return;
+          }
           setBusy(true);
           try {
             await save(value);
@@ -183,25 +196,21 @@ export default function TeamManagement({
             aria-labelledby="management-tab-repository"
             hidden={tab !== "repository"}
           >
-            <fieldset disabled={!canEdit} className="settings-fields">
-              <div className="team-invite">
-                <div>
-                  <small>TEAM ID</small>
-                  <code>{value.teamId || "workspace"}</code>
-                </div>
-                <button
-                  className="secondary"
-                  type="button"
-                  onClick={() => copy("invite")}
-                >
-                  {copied === "invite" ? (
-                    <Check size={14} />
-                  ) : (
-                    <Copy size={14} />
-                  )}
-                  Copy invite link
-                </button>
+            <div className="team-invite">
+              <div>
+                <small>TEAM ID</small>
+                <code>{value.teamId || "workspace"}</code>
               </div>
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => copy("invite")}
+              >
+                {copied === "invite" ? <Check size={14} /> : <Copy size={14} />}
+                Copy invite link
+              </button>
+            </div>
+            <fieldset disabled={!canEdit} className="settings-fields">
               <label className="field">
                 Team name
                 <input
@@ -422,6 +431,10 @@ export default function TeamManagement({
                             setValue((v) => ({
                               ...v,
                               members: v.members.filter((n) => n.id !== m.id),
+                              defaultReviewerId:
+                                v.defaultReviewerId === m.id
+                                  ? ""
+                                  : v.defaultReviewerId,
                             }))
                           }
                         >
@@ -545,16 +558,24 @@ export default function TeamManagement({
                             m.kind === "canvas" ||
                             (!!m.workstream && m.workstream !== "code")
                           }
-                          onChange={(e) =>
-                            update(m.id, { receivesReviews: e.target.checked })
-                          }
+                          onChange={(e) => {
+                            update(m.id, { receivesReviews: e.target.checked });
+                            if (
+                              !e.target.checked &&
+                              value.defaultReviewerId === m.id
+                            )
+                              setValue((v) => ({
+                                ...v,
+                                defaultReviewerId: "",
+                              }));
+                          }}
                         />{" "}
                         Receives code reviews
                       </label>
                       <label className="field">
                         Current task
                         <input
-                          maxLength={120}
+                          maxLength={100}
                           aria-label={`Member ${i + 1} task`}
                           value={m.focus}
                           onChange={(e) =>

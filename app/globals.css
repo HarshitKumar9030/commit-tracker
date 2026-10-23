@@ -3688,3 +3688,24 @@ select {
   font-size: 11px;
   overflow-wrap: anywhere;
 }
+.management-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.management-counts {
+  margin: 16px 0;
+}
+.management-counts > div {
+  padding: 14px 20px;
+}
+.management-tabs {
+  margin: 18px 0;
+}
+.team-management .member-list-heading {
+  margin: 16px 0;
+}
+.team-management .workflow-preset {
+  padding: 15px 18px;
+}

@@ -76,3 +76,19 @@ test("presentation empty state reports pending work without invented evidence", 
   assert.match(text, /0 documented changes/);
   assert.doesNotMatch(text, /Shared drawing adds/);
 });
+
+test("upgraded sample approvals match the displayed reviewer", () => {
+  const old = demoWorkspace();
+  delete old.demoContentVersion;
+  old.commits[2].assignee = "harshit";
+  old.commits[2].review = {
+    ...old.commits[2].review!,
+    note: "Approved. No changes requested.",
+  };
+  const data = upgradeDemoContent(old);
+  assert.equal(data.commits[2].assignee, data.commits[2].review!.by);
+  assert.notEqual(
+    data.settings.members.find((m) => m.id === data.commits[2].assignee)?.login,
+    data.commits[2].author,
+  );
+});

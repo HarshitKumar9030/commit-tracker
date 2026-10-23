@@ -36,7 +36,7 @@ const seedMembers: Member[] = [
   },
 ];
 export const members = hackathonTeam(seedMembers, "harshit");
-export const DEMO_CONTENT_VERSION = 3;
+export const DEMO_CONTENT_VERSION = 4;
 // Illustrative diffs, not a mirror of the connected repository's history.
 const examples = [
   {
@@ -212,7 +212,12 @@ export function upgradeDemoContent(value: Workspace): Workspace {
       return {
         ...seed,
         date: c.date,
-        assignee: c.assignee,
+        assignee:
+          genericReview &&
+          seed.review &&
+          value.settings.members.some((m) => m.id === seed.review!.by)
+            ? seed.review.by
+            : c.assignee,
         ...(genericReview ? {} : { review: c.review }),
       };
     }),

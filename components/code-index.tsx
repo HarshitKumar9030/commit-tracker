@@ -288,7 +288,7 @@ export default function CodeIndex({
                   aria-label="Code index summary"
                   maxLength={240}
                   required
-                  disabled={!editable}
+                  readOnly={!editable}
                   value={draft.summary}
                   onChange={(e) => change({ summary: e.target.value })}
                 />
@@ -298,7 +298,7 @@ export default function CodeIndex({
                 <textarea
                   aria-label="Code structure notes"
                   required
-                  disabled={!editable}
+                  readOnly={!editable}
                   maxLength={4000}
                   value={draft.notes}
                   onChange={(e) => change({ notes: e.target.value })}
