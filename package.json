@@ -14,7 +14,8 @@
     "format": "prettier --write app components lib scripts tests *.ts *.json *.md",
     "test:teams": "node --env-file=.env.local scripts/check-teams.mjs",
     "test:ai": "node --env-file=.env.local scripts/check-ai.mjs",
-    "test:canvas": "node --env-file=.env.local scripts/check-canvas.mjs"
+    "test:canvas": "node --env-file=.env.local scripts/check-canvas.mjs",
+    "test:files": "node --env-file=.env.local scripts/check-files.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.102",

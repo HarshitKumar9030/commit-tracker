@@ -30,6 +30,7 @@ import {
   Plus,
   PenTool,
   BookOpen,
+  Files,
 } from "lucide-react";
 import type { Commit, Review, Settings } from "@/lib/types";
 import { Avatar, Empty, Modal } from "./primitives";
@@ -41,6 +42,7 @@ const TeamManagement = dynamic(() => import("./team-management"));
 import AIPanel from "./ai-panel";
 import Presentation from "./presentation";
 import { api, useWorkspace } from "./use-workspace";
+const TeamFiles = dynamic(() => import("./team-files"));
 const CodeIndex = dynamic(() => import("./code-index"));
 const TeamCanvas = dynamic(() => import("./team-canvas"), {
   loading: () => <p className="muted">Loading canvas…</p>,
@@ -50,6 +52,7 @@ const nav = [
   { name: "Commit feed", icon: List },
   { name: "My reviews", icon: MessageSquare },
   { name: "Team", icon: Users },
+  { name: "Files", icon: Files },
   { name: "Canvas", icon: PenTool },
   { name: "Code index", icon: BookOpen },
   { name: "Presentation", icon: Monitor },
@@ -348,42 +351,46 @@ export default function Workspace() {
           <div className="page-heading">
             <div>
               <h1>
-                {page === "Team management"
-                  ? "Team management"
-                  : page === "Code index"
-                    ? "Code index"
-                    : page === "Canvas"
-                      ? "Shared canvas"
-                      : page === "AI analytics & chat"
-                        ? "Project assistant"
-                        : page === "Commit feed"
-                          ? "Repository activity"
-                          : page === "My reviews"
-                            ? "Review queue"
-                            : page === "Team"
-                              ? "Team members"
-                              : page === "Presentation"
-                                ? "Project recap"
-                                : "Overview"}
+                {page === "Files"
+                  ? "Shared files"
+                  : page === "Team management"
+                    ? "Team management"
+                    : page === "Code index"
+                      ? "Code index"
+                      : page === "Canvas"
+                        ? "Shared canvas"
+                        : page === "AI analytics & chat"
+                          ? "Project assistant"
+                          : page === "Commit feed"
+                            ? "Repository activity"
+                            : page === "My reviews"
+                              ? "Review queue"
+                              : page === "Team"
+                                ? "Team members"
+                                : page === "Presentation"
+                                  ? "Project recap"
+                                  : "Overview"}
               </h1>
               <p>
-                {page === "Team management"
-                  ? "Manage members, review assignments, and repository settings."
-                  : page === "Code index"
-                    ? "Track each commit’s functions, components, and code structure."
-                    : page === "Canvas"
-                      ? "Draw on a tablet and explain ideas to your team in real time."
-                      : page === "AI analytics & chat"
-                        ? "Analyze project activity and ask questions about code changes."
-                        : page === "Commit feed"
-                          ? "View commits, inspect code changes, and assign reviews."
-                          : page === "My reviews"
-                            ? "Commits assigned to you for review."
-                            : page === "Team"
-                              ? "View member status, roles, and current tasks."
-                              : page === "Presentation"
-                                ? "Export commit history and review notes for your presentation."
-                                : "Commit totals, pending reviews, and team status."}
+                {page === "Files"
+                  ? "Share Drive files and folders with your team."
+                  : page === "Team management"
+                    ? "Manage members, review assignments, and repository settings."
+                    : page === "Code index"
+                      ? "Track each commit’s functions, components, and code structure."
+                      : page === "Canvas"
+                        ? "Draw on a tablet and explain ideas to your team in real time."
+                        : page === "AI analytics & chat"
+                          ? "Analyze project activity and ask questions about code changes."
+                          : page === "Commit feed"
+                            ? "View commits, inspect code changes, and assign reviews."
+                            : page === "My reviews"
+                              ? "Commits assigned to you for review."
+                              : page === "Team"
+                                ? "View member status, roles, and current tasks."
+                                : page === "Presentation"
+                                  ? "Export commit history and review notes for your presentation."
+                                  : "Commit totals, pending reviews, and team status."}
               </p>
             </div>
           </div>
@@ -392,7 +399,78 @@ export default function Workspace() {
               {error}
             </p>
           )}
-          {page === "Team management" ? (
+          {page === "Files" ? (
+            <TeamFiles
+              data={data}
+              user={user}
+              onAction={async (action) => {
+                if (data.mode === "live") {
+                  await api("files", action);
+                  await refresh();
+                  return;
+                }
+                const { teamFileInput, parseDriveLink, canManageFile } =
+                  await import("@/lib/team-files");
+                const current = data.files || [];
+                const now = new Date().toISOString();
+                if (action.action === "add") {
+                  const input = teamFileInput.parse(action),
+                    link = parseDriveLink(input.url);
+                  if (current.some((f) => f.driveId === link.driveId))
+                    throw new Error(
+                      "This Drive file is already in the shared list or archive.",
+                    );
+                  if (current.length >= 500)
+                    throw new Error(
+                      "The team has reached the 500 shared-link limit.",
+                    );
+                  setData({
+                    ...data,
+                    files: [
+                      {
+                        ...input,
+                        ...link,
+                        id: link.driveId,
+                        addedBy: user.id,
+                        addedAt: now,
+                        updatedAt: now,
+                        pinned: false,
+                      },
+                      ...current,
+                    ],
+                  });
+                } else {
+                  const file = current.find((f) => f.id === action.id);
+                  if (
+                    !file ||
+                    !canManageFile(file, user.id, data.settings.ownerId)
+                  )
+                    throw new Error(
+                      "Only the person who shared this file or the team creator can change its entry.",
+                    );
+                  setData({
+                    ...data,
+                    files: current.map((f) =>
+                      f.id !== action.id
+                        ? f
+                        : action.action === "archive"
+                          ? { ...f, archivedAt: now, updatedAt: now }
+                          : action.action === "restore"
+                            ? { ...f, archivedAt: undefined, updatedAt: now }
+                            : {
+                                ...f,
+                                ...teamFileInput
+                                  .omit({ url: true })
+                                  .parse(action),
+                                pinned: action.pinned,
+                                updatedAt: now,
+                              },
+                    ),
+                  });
+                }
+              }}
+            />
+          ) : page === "Team management" ? (
             <TeamManagement
               settings={data.settings}
               userId={user.id}

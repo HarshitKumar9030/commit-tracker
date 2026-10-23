@@ -1,3 +1,4 @@
+import type { TeamFile } from "@/lib/team-files";
 import type { CodeIndexRecord } from "@/lib/code-index";
 import type { Commit } from "@/lib/types";
 import { configured, db, settings, user, failure } from "@/lib/server";
@@ -44,9 +45,18 @@ export async function GET() {
         { projection: { _id: 0, teamId: 0, repo: 0, branch: 0 } },
       )
       .toArray();
+    const files = await (
+      await db()
+    )
+      .collection<TeamFile & { teamId: string }>("team_files")
+      .find({ teamId: u.teamId }, { projection: { _id: 0, teamId: 0 } })
+      .sort({ addedAt: -1 })
+      .limit(500)
+      .toArray();
     return Response.json(
       {
         mode: "live",
+        files,
         codeIndex,
         settings: s,
         commits,

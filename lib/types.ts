@@ -55,5 +55,6 @@ export type Workspace = {
   settings: Settings;
   userId?: string;
   realtime: boolean;
+  files?: import("./team-files").TeamFile[];
   codeIndex?: import("./code-index").CodeIndexRecord[];
 };
