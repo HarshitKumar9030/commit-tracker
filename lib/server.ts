@@ -55,7 +55,7 @@ export async function settings(explicitTeamId?: string): Promise<Settings> {
     return {
       teamId: "workspace",
       name: "Hackathon workspace",
-      repo: process.env.GITHUB_REPO || "HarshitKumar9030/commit-tracker",
+      repo: process.env.GITHUB_REPO || "example/project",
       branch: "main",
       members: [],
     };

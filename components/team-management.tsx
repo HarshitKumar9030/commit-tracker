@@ -319,9 +319,9 @@ export default function TeamManagement({
             <details className="workflow-preset">
               <summary>Four-person hackathon setup</summary>
               <p>
-                Harshit + Swarnim code. Syed maintains the code index. Trisha
-                prepares the presentation. The Canvas User is a separate shared
-                tablet profile.
+                Two developers write and review code. A code maintainer
+                documents changes, and a presenter prepares the presentation.
+                The Canvas User is a separate shared tablet profile.
               </p>
               <button
                 type="button"

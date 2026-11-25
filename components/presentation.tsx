@@ -75,7 +75,7 @@ export default function Presentation({
         <div>
           <strong>
             {data.mode === "demo"
-              ? "Trisha’s sample presentation"
+              ? "Sample presentation"
               : "Presentation walkthrough"}
           </strong>
           <p>

@@ -28,8 +28,8 @@ async function call(path, body, cookie) {
 async function create(setupHackathon = false) {
   const result = await call("teams", {
     name: "Canvas QA",
-    repo: "HarshitKumar9030/commit-tracker",
-    memberName: "Harshit",
+    repo: "example/project",
+    memberName: "Team lead",
     login: "qa-coder",
     code: "temporary-canvas-qa-code",
     setupHackathon,
@@ -85,7 +85,7 @@ try {
     teamId = created.data.teamId,
     initial = await call("state", undefined, owner),
     settings = initial.data.settings;
-  const names = ["Swarnim", "Syed", "Trisha", "Canvas User"];
+  const names = ["Developer 2", "Code maintainer", "Presenter", "Canvas User"];
   const extra = names.map((name, i) => ({
     id: randomUUID(),
     name,
@@ -268,7 +268,7 @@ try {
   const bootstrapped = await call("state", undefined, separate.cookie);
   assert.deepEqual(
     bootstrapped.data.settings.members.map((m) => m.name),
-    ["Harshit", "Swarnim", "Syed", "Trisha", "Canvas User"],
+    ["Team lead", "Developer 2", "Code maintainer", "Presenter", "Canvas User"],
   );
   assert.equal(
     bootstrapped.data.settings.members.filter((m) => m.receivesReviews).length,

@@ -13,7 +13,7 @@ try {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: "AI QA team",
-      repo: "HarshitKumar9030/commit-tracker",
+      repo: "example/project",
       memberName: "AI QA",
       login: "ai-qa",
       code: "temporary-ai-qa-code",

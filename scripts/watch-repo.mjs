@@ -1,7 +1,10 @@
 // Local-only fallback when GitHub cannot reach a webhook on localhost.
 const base = process.env.APP_URL || "http://localhost:3000";
-if (!process.env.TEAM_ACCESS_CODE) {
-  console.error("Set TEAM_ACCESS_CODE in .env.local first.");
+if (
+  !process.env.WATCH_MEMBER_ID ||
+  !(process.env.WATCH_TEAM_CODE || process.env.TEAM_ACCESS_CODE)
+) {
+  console.error("Set WATCH_MEMBER_ID and WATCH_TEAM_CODE in .env.local first.");
   process.exit(1);
 }
 let cookie = "";
@@ -12,7 +15,7 @@ async function tick() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: process.env.WATCH_MEMBER_ID || "harshit",
+          id: process.env.WATCH_MEMBER_ID,
           teamId: process.env.WATCH_TEAM_ID || "workspace",
           code: process.env.WATCH_TEAM_CODE || process.env.TEAM_ACCESS_CODE,
         }),

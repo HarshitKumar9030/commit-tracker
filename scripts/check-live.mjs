@@ -5,6 +5,12 @@ import { createHmac } from "node:crypto";
 const base = process.env.APP_URL || "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(base))
   throw Error("Run live validation against a local development server only.");
+const firstMemberId = process.env.TEST_MEMBER_ID;
+const secondMemberId = process.env.TEST_SECOND_MEMBER_ID;
+if (!firstMemberId || !secondMemberId)
+  throw Error(
+    "Set TEST_MEMBER_ID and TEST_SECOND_MEMBER_ID for the legacy local workspace.",
+  );
 let restoreReview;
 async function request(path, body, cookie) {
   return fetch(base + "/api/" + path, {
@@ -41,8 +47,8 @@ async function realtime(id) {
   };
 }
 assert.equal((await request("sync", {})).status, 401);
-const a = await realtime("harshit"),
-  b = await realtime("aanya");
+const a = await realtime(firstMemberId),
+  b = await realtime(secondMemberId);
 try {
   await Promise.all([
     a.rt.connection.once("connected"),
@@ -61,7 +67,9 @@ try {
     const check = async () => {
       const ms = await ca.presence.get();
       if (
-        ["harshit", "aanya"].every((id) => ms.some((m) => m.clientId === id))
+        [firstMemberId, secondMemberId].every((id) =>
+          ms.some((m) => m.clientId === id),
+        )
       ) {
         clearTimeout(timer);
         resolve(ms);
@@ -83,7 +91,9 @@ try {
   const original = await request("state", undefined, b.cookie).then((r) =>
     r.json(),
   );
-  const focus = original.settings.members.find((m) => m.id === "aanya").focus;
+  const focus = original.settings.members.find(
+    (m) => m.id === secondMemberId,
+  ).focus;
   assert.equal((await request("focus", { focus }, b.cookie)).status, 200);
   await update;
   const first = await request("sync", {}, a.cookie).then((r) => r.json());
@@ -95,7 +105,9 @@ try {
   assert.ok(state.commits.some((c) => c.files.length > 0));
   const duplicate = await request("sync", {}, a.cookie).then((r) => r.json());
   assert.equal(duplicate.added, 0);
-  const commit = state.commits.find((c) => c.assignee !== "harshit");
+  const commit = state.commits.find(
+    (c) => c.assignee && c.assignee !== firstMemberId,
+  );
   assert.ok(commit);
   assert.equal(
     (

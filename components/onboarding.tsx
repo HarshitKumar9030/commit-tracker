@@ -25,7 +25,7 @@ export default function Onboarding({
     [members, setMembers] = useState<PickMember[]>([]),
     [id, setId] = useState(""),
     [name, setName] = useState(""),
-    [memberName, setMemberName] = useState("Harshit"),
+    [memberName, setMemberName] = useState(""),
     [login, setLogin] = useState(""),
     [repo, setRepo] = useState(""),
     [setupHackathon, setSetupHackathon] = useState(true),
@@ -154,8 +154,8 @@ export default function Onboarding({
                     checked={setupHackathon}
                     onChange={(e) => setSetupHackathon(e.target.checked)}
                   />
-                  Set up Harshit, Swarnim, Syed, Trisha, and a shared Canvas
-                  User
+                  Set up two developers, a code maintainer, a presenter, and a
+                  shared Canvas User
                 </label>
                 <label className="field">
                   Repository

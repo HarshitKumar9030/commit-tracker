@@ -66,7 +66,7 @@ test("Drive sharing rejects executable, spoofed, credential-bearing, unrelated a
 });
 test("only the sharer and team creator can manage a shared entry", () => {
   const file = { addedBy: "syed" } as TeamFile;
-  assert.equal(canManageFile(file, "syed", "harshit"), true);
-  assert.equal(canManageFile(file, "harshit", "harshit"), true);
-  assert.equal(canManageFile(file, "trisha", "harshit"), false);
+  assert.equal(canManageFile(file, "syed", "team-lead"), true);
+  assert.equal(canManageFile(file, "team-lead", "team-lead"), true);
+  assert.equal(canManageFile(file, "trisha", "team-lead"), false);
 });

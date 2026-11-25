@@ -40,7 +40,7 @@ const steps = [
     page: "Code index",
     target: ".index-layout",
     title: "Read the code reference",
-    text: "Five sample changes have maintainer notes explaining functions, components, and their purpose. Try as Syed to document the remaining change. Saved notes feed the presentation.",
+    text: "Five sample changes have maintainer notes explaining functions, components, and their purpose. Try as maintainer to document the remaining change. Saved notes feed the presentation.",
   },
   {
     page: "Files",

@@ -52,7 +52,7 @@ test("demo upgrade retains identity, team edits, custom commits, notes, and revi
   old.commits[0].review = {
     verdict: "changes",
     note: "Keep this feedback",
-    by: "aanya",
+    by: "developer-2",
     at: "2026-10-22T12:00:00Z",
   };
   old.codeIndex![0].notes = "My handwritten code notes";
@@ -80,7 +80,7 @@ test("presentation empty state reports pending work without invented evidence", 
 test("upgraded sample approvals match the displayed reviewer", () => {
   const old = demoWorkspace();
   delete old.demoContentVersion;
-  old.commits[2].assignee = "harshit";
+  old.commits[2].assignee = "team-lead";
   old.commits[2].review = {
     ...old.commits[2].review!,
     note: "Approved. No changes requested.",
@@ -90,5 +90,43 @@ test("upgraded sample approvals match the displayed reviewer", () => {
   assert.notEqual(
     data.settings.members.find((m) => m.id === data.commits[2].assignee)?.login,
     data.commits[2].author,
+  );
+});
+
+test("legacy demo profiles migrate without changing identities or custom names", () => {
+  const old = demoWorkspace();
+  delete old.demoContentVersion;
+  old.settings.members[0] = {
+    ...old.settings.members[0],
+    id: "harshit",
+    name: "Harshit",
+    login: "old-login",
+  };
+  old.commits = old.commits.map((c) => ({
+    ...c,
+    assignee: c.assignee === "team-lead" ? "harshit" : c.assignee,
+    ...(c.review
+      ? {
+          review: {
+            ...c.review,
+            by: c.review.by === "team-lead" ? "harshit" : c.review.by,
+          },
+        }
+      : {}),
+  }));
+  old.settings.ownerId = "harshit";
+  old.userId = "harshit";
+  old.settings.members[1].name = "Custom teammate";
+  const updated = upgradeDemoContent(old);
+  assert.equal(updated.settings.members[0].name, "Team lead");
+  assert.equal(updated.settings.members[0].id, "harshit");
+  assert.equal(updated.userId, "harshit");
+  assert.equal(updated.settings.members[1].name, "Custom teammate");
+  assert.ok(
+    updated.commits.every(
+      (c) =>
+        !c.review ||
+        updated.settings.members.some((m) => m.id === c.review!.by),
+    ),
   );
 });

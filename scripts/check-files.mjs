@@ -20,7 +20,7 @@ async function call(path, body, cookie) {
 async function create() {
   const result = await call("teams", {
     name: "Files QA",
-    repo: "HarshitKumar9030/commit-tracker",
+    repo: "example/project",
     memberName: "QA Owner",
     login: "qa-owner",
     code: "files-test-only",

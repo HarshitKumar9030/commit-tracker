@@ -22,7 +22,7 @@ async function call(path, body, cookie) {
 try {
   const created = await call("teams", {
     name: "QA team",
-    repo: "HarshitKumar9030/commit-tracker",
+    repo: "example/project",
     memberName: "QA Creator",
     login: "qa-creator",
     code: "qa-test-code-only",

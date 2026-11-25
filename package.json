@@ -25,7 +25,7 @@
     "gsap": "3.15.0",
     "lucide-react": "1.60.0",
     "mongodb": "7.7.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-markdown": "10.1.0",
@@ -41,5 +41,26 @@
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "7.0.2"
-  }
+  },
+  "description": "A shared hackathon workspace for commit reviews, code documentation, canvas collaboration, and presentation notes.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarshitKumar9030/commit-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HarshitKumar9030/commit-tracker/issues"
+  },
+  "homepage": "https://github.com/HarshitKumar9030/commit-tracker#readme",
+  "keywords": [
+    "hackathon",
+    "commit-tracker",
+    "code-review",
+    "nextjs",
+    "mongodb",
+    "collaboration"
+  ]
 }

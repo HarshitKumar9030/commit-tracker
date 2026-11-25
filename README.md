@@ -1,144 +1,84 @@
-# Relay · commit-tracker
+# Relay
 
-A hackathon commit tracker with GitHub diffs, assigned code reviews, WebSocket presence, editable team groups, and Markdown recaps.
+A shared workspace for hackathon teams to follow code changes, review commits, document architecture, and prepare their demo.
 
-Built with **Next.js + TypeScript, MongoDB, and Ably WebSockets**. The interface uses locally hosted Manrope, open spacing, violet accents, and no borders or shadows.
+Built with Next.js, React, TypeScript, MongoDB, and Ably. Self-host on Vercel or run locally.
 
-## Run locally
+## What it does
 
-Requires Node.js 22+ and MongoDB Community Server (`mongod`).
+- **Commit feed:** import GitHub commits, inspect diffs, copy changes, and assign reviews.
+- **Review routing:** rotate between developers, choose a fixed reviewer, or assign manually.
+- **Code index:** detect functions and components from diffs, then add Markdown explanations.
+- **Presentation:** turn saved explanations and review notes into an exportable project recap.
+- **Shared canvas:** draw with a stylus, stream sketches to teammates, and save boards in MongoDB.
+- **Files:** share Google Drive file and folder links, with categories, notes, previews, and archive/restore.
+- **Presence:** see connected teammates and their current tasks over WebSockets.
+- **Optional AI:** stream Markdown chat responses and generate activity analytics using Gemini.
+
+Teams support 1–20 profiles. The optional starter setup has two developers, a code maintainer, a presenter, and a shared tablet profile. Names, responsibilities, and review eligibility are editable.
+
+## Quick start
+
+Use Node.js 24 LTS and npm. MongoDB is required for live teams; Ably enables presence and canvas previews.
 
 ```bash
+git clone https://github.com/HarshitKumar9030/commit-tracker.git
+cd commit-tracker
 npm ci
 cp .env.example .env.local
-# Fill in SESSION_SECRET and TEAM_ACCESS_CODE; add your Ably key.
+```
+
+For a live workspace, fill in `MONGODB_URI` and generate a session secret:
+
+```bash
+openssl rand -hex 32
+```
+
+Put the result in `SESSION_SECRET`. Add your Ably key for realtime features. If using a local MongoDB Community installation:
+
+```bash
 npm run db:start
+```
+
+Then start Relay:
+
+```bash
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). Create a team group with a name, repository, your profile, and an access code. Open **Team → Manage members** to add teammates by name, GitHub username, and role. Copy the invite link and share the access code separately. Teammates open the link, enter the code, and select their profile. Each group has an independent MongoDB roster, commit feed, and Ably channel. The existing local group has ID `workspace` and uses `TEAM_ACCESS_CODE`.
+Open [localhost:3000](http://localhost:3000). Create a team using your repository and profile, then invite teammates from **Team settings**. Share the team access code separately from the invite link.
 
-On the development machine prepared in this chat, MongoDB and `.env.local` are already configured. The initial local workspace code is **relay-hackathon**. Change it before sharing a deployment. Local database files live in the ignored `.local/mongodb` directory, and MongoDB listens only on `127.0.0.1:27017`.
+### Try without credentials
 
-To monitor GitHub while running locally, open a second terminal:
+Open [localhost:3000/?demo=1](http://localhost:3000/?demo=1) for illustrative commits, index records, and a presentation walkthrough. Demo changes stay in your browser and make no GitHub or AI requests. Missing core server configuration also starts demo mode.
 
-```bash
-npm run watch:repo
-```
+## Configuration and deployment
 
-This syncs the latest 20 commits every two minutes and publishes updates over WebSockets. **Sync commits** also works on demand. For immediate push updates, configure a GitHub webhook against a deployed HTTPS URL or a development tunnel. GitHub cannot deliver to localhost directly. The watcher is a local development process, not a Vercel background job.
+- [Environment variables and Vercel deployment](docs/deployment.md)
+- [Team workflow and access model](docs/team-workflow.md)
+- [Architecture and repository map](docs/architecture.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security reporting](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
 
-For UI exploration without credentials, visit [/?demo=1](http://localhost:3000/?demo=1). Demo commits and actions are clearly labeled, stay in browser storage, and never touch MongoDB or GitHub. With missing core server configuration, the app also defaults to demo mode.
+### GitHub sync
 
-## The workflow
+Use **Sync commits** to import repository activity. For automatic updates, configure a push webhook with `application/json`, your team's webhook URL from **Team settings → Repository & invites**, and `GITHUB_WEBHOOK_SECRET`. A read-only GitHub token is required for private repositories and recommended for public API limits. Relay reviews are internal; they do not create GitHub reviews or block merges.
 
-1. A GitHub push webhook (or a sync) fetches commits and file patches into MongoDB.
-2. Each commit is assigned deterministically to one of the other three teammates, excluding the author by GitHub username. Assignment is stable across retries and spreads commits by SHA. External contributors are eligible for any teammate to review.
-3. Teammates inspect changed files, approve a commit, or request changes with a note. Only its assigned reviewer can submit a judgment. Reviews are internal to Relay; they do not modify GitHub pull requests or block merges.
-4. Ably WebSockets broadcast workspace refreshes and track presence by authenticated member identity. Reconnecting clients recover presence automatically; duplicate tabs count as one teammate. Workspace state is also refreshed every 30 seconds when realtime is configured.
-5. Teammates update their focus. The Presentation view collects commit descriptions and approved review notes, with Markdown copy and export for your pitch.
-
-A team supports 1–20 members. The creator controls membership and repository settings. Each group shares an access code; anyone with it can select a listed profile. Codes for newly created groups are salted and hashed with scrypt in MongoDB. This is shared team access for a trusted hackathon group, not individual GitHub OAuth. A solo creator’s own commits remain unassigned until another member is added. Removing a member revokes API access and reassigns pending reviews. Existing completed review history is retained.
-
-## Environment variables
-
-| Variable                | Purpose                                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `MONGODB_URI`           | Local connection or MongoDB Atlas connection string                                                                                        |
-| `MONGODB_DB`            | Database name, defaults to `relay`                                                                                                         |
-| `SESSION_SECRET`        | At least 32 random characters; signs seven-day HTTP-only sessions                                                                          |
-| `TEAM_ACCESS_CODE`      | Your team's shared workspace code                                                                                                          |
-| `ABLY_API_KEY`          | Server-only key with publish, subscribe, and presence access on `relay:*`                                                                  |
-| `GITHUB_REPO`           | Initial `owner/repository`; change it later in settings                                                                                    |
-| `GITHUB_TOKEN`          | Optional for public repos; required for private repos. Use a fine-grained token with read-only Contents access to the monitored repository |
-| `GITHUB_WEBHOOK_SECRET` | Random secret shared with GitHub for HMAC-SHA256 verification                                                                              |
-
-Generate independent secrets with `openssl rand -hex 32`. Never prefix these with `NEXT_PUBLIC_`, commit `.env.local`, or paste keys into client code. Browsers receive short-lived, identity-bound Ably tokens with only subscribe and presence capabilities. A subscribe-only Ably key cannot support presence. A root key works server-side; a dedicated key scoped to `relay:*` is preferable. Rotate any key pasted into a conversation.
-
-## Deploy to Vercel
-
-1. Import [HarshitKumar9030/commit-tracker](https://github.com/HarshitKumar9030/commit-tracker) into Vercel. It detects Next.js. Use the repository root, `npm ci`, and `npm run build`; no custom server is required.
-2. Create a MongoDB Atlas database and set `MONGODB_URI` to its connection string. **A Vercel deployment cannot reach your laptop's localhost MongoDB.** Allow network access from your deployment environment and use a dedicated database user.
-3. Add the environment variables above in Vercel. Set a new access code and strong secrets for the deployed workspace. Use separate databases, Ably apps, and webhook secrets for preview and production if both are active.
-4. Deploy, create a team group, then add the members, repository, and branch in **Team settings**. Click **Sync commits** once to import recent history.
-5. In the monitored GitHub repository, open **Settings → Webhooks → Add webhook**:
-   - Payload URL: copy the group-specific URL from **Team settings**, e.g. `https://your-domain/api/webhooks/github?team=your-team-id`
-   - Content type: `application/json`
-   - Secret: the same `GITHUB_WEBHOOK_SECRET` configured in Vercel
-   - Events: **Just the push event**
-   - Keep SSL verification enabled.
-6. Push a commit. In GitHub's webhook deliveries, confirm a `200` response. Open two separate browser profiles as different teammates and verify live presence and the new assigned review.
-
-The webhook endpoint must be publicly reachable by GitHub; a Vercel Authentication-protected preview will need the appropriate protection configuration. Standard production deployments are simplest. Ably hosts the WebSocket connections; the UI and all application APIs run on Vercel. Keys stay on the server. No sticky sessions, in-memory application database, or separate Socket.IO server is used.
-
-MongoDB uses its unique `_id` for idempotent insertion, scoped to team, repository, branch, and SHA. Manual sync imports the most recent 20 commits. Webhooks import up to 100 commits from a push plus recent history. The UI shows the latest 100 stored commits for the configured branch. This is a hackathon activity feed, not a complete repository-history archive. GitHub may omit binary or very large patches; the diff dialog links to GitHub for those changes.
-
-## Validation
+## Development
 
 ```bash
-npm test           # Assignment invariants and webhook signature tampering
+npm test
 npm run typecheck
 npm run build
-npm run test:live  # Local app + MongoDB + Ably must be running/configured
-npm run test:teams # Creates and removes an isolated local test team
 ```
 
-The live check exercises two actual WebSocket clients, presence, MongoDB updates, GitHub sync, duplicate ingestion, authorization, review persistence, and signed/invalid webhooks. It temporarily writes a review, restores the previous review, and uses the configured local workspace. Do not run it against a production deployment.
+Integration checks require a running local app and configured services. See [CONTRIBUTING.md](CONTRIBUTING.md) for service requirements and scripts. CI runs unit tests, type checking, and a production build without live credentials.
 
-To start the production build locally, run `npm run build` followed by `npm start`. To restart local MongoDB, run `npm run db:start`; it checks for an existing server first. MongoDB's local log is `.local/mongodb.log`.
+## Limits to know
 
-## Demo onboarding and interaction help
+Relay uses a **shared team code**, not individual OAuth accounts. Anyone with that code can select a team profile; use it with trusted groups. The code index reads available diff declarations rather than parsing the entire repository. Drive links retain Google's access rules, and uploading happens in Drive. AI is optional and receives bounded commit context only after a user action.
 
-Open `/?demo=1` to see the demo introduction. The six-step tour covers counts, commit diffs, assigned reviews, presence, membership, and recap export. Finish or skip it to remember your preference in this browser; replay it with **Demo tour**. Demo changes never touch GitHub or MongoDB.
+## License
 
-Tooltips appear on hover and keyboard focus for sync, filters, search, diff rows, membership, profile switching, review actions, and exports. Press Escape to dismiss a tooltip or tour. Dialogs and the tour keep keyboard focus within their controls.
-
-GSAP animates the SVG connection paths and nodes. Framer Motion handles navigation, counts, cards, dialogs, roster changes, and tour transitions. Both respect the operating system's reduced-motion preference. No sparkle icons or emoji are used.
-
-For the local watcher to monitor a newly created group, set `WATCH_TEAM_ID`, `WATCH_MEMBER_ID`, and `WATCH_TEAM_CODE` in `.env.local`. Without these, it uses the existing local `workspace` group. Use the creator's member ID from the authenticated `/api/state` response. Group-specific webhook URLs provide immediate push delivery after deployment.
-
-### Review routing and AI
-
-In Team settings, turn off **Receives code reviews** for teammates working on slides, product, or documentation. Set a default reviewer to route code to one person, or choose manual assignment. Pending commits can be assigned from their diff dialog. Authors are excluded unless **Allow authors to review their own commits** is enabled. Completed reviews keep their recorded reviewer. Available text diffs can be copied or downloaded; GitHub may omit binary or large patches.
-
-**AI analytics & chat** uses Gemini `gemini-3.8-flash`. Add `GEMINI_API_KEY` locally and to Vercel for direct Google access, or use Vercel AI Gateway (`google/gemini-3.8-flash`) with an active billing account. Keys stay on the server. Gateway uses Vercel OIDC on deployments; refresh local OIDC through `vercel env pull` without overwriting your local database configuration.
-
-AI runs only after a button click. Context includes at most 20 commit summaries (14,000 characters total) and six previous messages (6,000 characters total). Optional diff context is capped at four files and 1,800 characters per file. Responses stream as Markdown, with 1,200 output tokens and low thinking effort. Each member gets 20 requests per hour; failed provider attempts also count. Analytics with identical context is reused for 15 minutes. Usage token counts are saved in `ai_usage` for 30 days; MongoDB TTL indexes expire caches and request counters. No complete repository is sent. Demo mode uses labeled local previews without model calls. Review AI output against the original diff.
-
-Run `npm run test:ai` with local MongoDB and a configured AI provider to check authenticated streaming, analytics cache reuse, and recorded token usage. It makes two small model calls and removes only the temporary QA team's data afterward.
-
-### Team workflow and shared canvas
-
-The four-person preset creates these responsibilities, plus a separate shared tablet profile:
-
-| Teammate    | Responsibility                                          |
-| ----------- | ------------------------------------------------------- |
-| Harshit     | Lead developer; code architecture and implementation    |
-| Swarnim     | Developer; feature work and code reviews                |
-| Syed        | Code index; document changes, functions, and components |
-| Trisha      | Presentation; turn project changes into the demo story  |
-| Canvas User | Shared tablet profile; opens the canvas immediately     |
-
-New-team creation offers this preset. Existing teams can apply it from **Team settings → Apply team setup**. Names, responsibilities, members, and GitHub usernames remain editable. Add both coders' GitHub usernames for accurate author matching. Only code teammates receive automatic code reviews. Syed opens the code index on sign-in; Trisha opens the presentation recap.
-
-**Code index** detects function, component, class, and type declarations from the available commit patches, with added/removed/modified labels. This is a lightweight diff index, not a full source-code parser. Syed and the team creator can save change summaries and structure notes in MongoDB. Everyone can read them; saved notes and detected symbols appear in the presentation recap and its Markdown export. Detection makes no AI calls.
-
-**Canvas** is editable by every teammate, including their normal profiles. On the tablet, sign in with the team's code and select **Canvas User**. Use pen, pressure-sensitive stylus input, highlighter, stroke eraser, undo/redo, ink colors, and pen size. Finger drawing starts off to reduce palm marks. Expand the board for more drawing space; export PNG or SVG when needed. Pressure depends on the tablet/browser hardware support; SVG export uses uniform stroke widths while MongoDB and PNG retain pressure rendering.
-
-Live previews use a team-scoped Ably channel and are throttled to roughly eight messages per second per active pointer. Finished strokes are validated and saved independently in `canvas_strokes`; `canvas_boards` tracks the current board. Clients cannot publish durable-save notifications. New boards preserve previous boards, available as read-only history. Offline changes use a per-team, per-profile device queue and retry on reconnect; late strokes stay attached to their original board. Keep the browser open if device backup is unavailable. Each board supports 2,000 strokes of up to 512 sampled points, with up to 100 boards per team.
-
-Run `npm run test:canvas` against local MongoDB to verify two actual Ably clients, all four teammates' drawing access, stroke persistence/idempotence, undo, saved board history, late offline strokes, team isolation, and code-index permissions. It creates and removes only its own QA data.
-
-### Trying the workflow demo
-
-Open `/?demo=1`. Six illustrative commits contain distinct diffs, with five saved code-index records and one change awaiting documentation. **Code index → Read an example** shows detected symbols and maintainer notes. **Try as Syed** switches to the index profile and the pending change; saving its notes updates **Presentation**. The presentation has a suggested three-minute outline, rehearsal controls, sample-diff links, and a Markdown recap with the supporting records and review decisions. These examples make no GitHub or model calls. Versioned demo upgrades preserve team edits, custom notes, review feedback, and the separate canvas storage.
-
-**Team settings** opens a dedicated page. Select a teammate in **Members & roles** to edit their profile, responsibility, task, or review eligibility. Use **Review routing** for automatic/manual assignment and a fixed reviewer; use **Repository & invites** for repository settings, team invites, and the webhook URL. Save changes explicitly. Live editing remains restricted to the creator; other members can browse the roster and copy invites.
-
-### Shared Google Drive files
-
-**Files** is a team-wide list of Google Drive file and folder links. Share PDFs, Word documents, images, Google Docs, Sheets, Slides, or project folders from Drive. Add a title, category, and optional Markdown description. Every member can add and read entries; the sharer and team creator can edit, pin, archive, or restore them. Live entries are stored in MongoDB `team_files` and use the existing Ably refresh channel. Demo entries are stored in this browser.
-
-Use **Share → Copy link** in Google Drive, then **Files → Share a Drive link**. For a common upload space, share a Drive folder with your teammates as Editors, add the folder here, and use **Open folder / upload**. Uploads happen in Google Drive. Relay does not upload or duplicate file contents, grant access, or change Drive sharing permissions. File resource keys are retained in shared and preview URLs. Private previews may require opening Drive directly in an account with access, particularly when third-party cookies are blocked.
-
-No Google API credentials or OAuth setup is needed for this link-based version. Supported sharing URLs are restricted to `https://drive.google.com` and `https://docs.google.com`. Archiving removes only the Relay entry from the active list; it never deletes the original Drive file. Each team supports up to 500 entries including its archive. Run `npm run test:files` to check persistence, member access, ownership rules, duplicate handling, team isolation, and archive/restore with disposable local QA teams.
+[MIT](LICENSE). The bundled Manrope font is licensed separately under the [SIL Open Font License](public/fonts/OFL.txt). Third-party dependencies retain their own licenses.

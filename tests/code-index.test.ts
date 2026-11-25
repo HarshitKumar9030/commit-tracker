@@ -40,8 +40,8 @@ test("four-person setup preserves owner identity and adds separate shared tablet
     [
       {
         id: "owner",
-        name: "Harshit",
-        login: "HarshitKumar9030",
+        name: "Team lead",
+        login: "demo-lead",
         role: "",
         focus: "",
         color: "purple",
@@ -51,11 +51,14 @@ test("four-person setup preserves owner identity and adds separate shared tablet
   );
   assert.deepEqual(
     members.map((m) => m.name),
-    ["Harshit", "Swarnim", "Syed", "Trisha", "Canvas User"],
+    ["Team lead", "Developer 2", "Code maintainer", "Presenter", "Canvas User"],
   );
   assert.equal(members[0].id, "owner");
   assert.equal(members.filter((m) => m.receivesReviews).length, 2);
-  assert.equal(members.find((m) => m.name === "Syed")?.workstream, "index");
+  assert.equal(
+    members.find((m) => m.name === "Code maintainer")?.workstream,
+    "index",
+  );
   assert.equal(canMaintainIndex(members[2], "owner"), true);
   assert.equal(canMaintainIndex(members[3], "owner"), false);
   assert.equal(canMaintainIndex(members[0], "owner"), true);
@@ -68,4 +71,31 @@ test("body edits retain the enclosing visible function as modified", () => {
   });
   assert.equal(symbols[0].name, "connect");
   assert.equal(symbols[0].change, "modified");
+});
+
+test("starter roles preserve custom names and GitHub identities", () => {
+  const existing = [
+    {
+      id: "owner",
+      name: "Morgan",
+      login: "morgan-dev",
+      role: "",
+      focus: "",
+      color: "purple",
+    },
+    {
+      id: "partner",
+      name: "Taylor",
+      login: "taylor-dev",
+      role: "",
+      focus: "",
+      color: "pink",
+    },
+  ];
+  const team = hackathonTeam(existing, "owner");
+  assert.equal(team[0].name, "Morgan");
+  assert.equal(team[0].login, "morgan-dev");
+  assert.equal(team[1].name, "Taylor");
+  assert.equal(team[1].login, "taylor-dev");
+  assert.equal(team[2].name, "Code maintainer");
 });

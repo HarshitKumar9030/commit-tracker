@@ -12,25 +12,25 @@ export function hackathonTeam(existing: Member[], ownerId?: string): Member[] {
       : people;
   const roles = [
     {
-      name: "Harshit",
+      name: "Team lead",
       role: "Lead developer",
       workstream: "code",
       focus: "Code architecture and implementation",
     },
     {
-      name: "Swarnim",
+      name: "Developer 2",
       role: "Developer",
       workstream: "code",
       focus: "Feature development",
     },
     {
-      name: "Syed",
+      name: "Code maintainer",
       role: "Code-index maintainer",
       workstream: "index",
       focus: "Documenting commits, functions, and components",
     },
     {
-      name: "Trisha",
+      name: "Presenter",
       role: "Presentation",
       workstream: "presentation",
       focus: "Demo story and presentation",
@@ -42,11 +42,10 @@ export function hackathonTeam(existing: Member[], ownerId?: string): Member[] {
       ...current,
       id: current?.id || crypto.randomUUID(),
       color: current?.color || ["purple", "pink", "orange", "blue"][i],
-      login: current?.name.toLowerCase().startsWith(config.name.toLowerCase())
-        ? current.login
-        : "",
-      kind: "member",
       ...config,
+      name: current?.name || config.name,
+      login: current?.login || "",
+      kind: "member",
       receivesReviews: config.workstream === "code",
     };
   });
